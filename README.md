@@ -8,7 +8,7 @@ This Unit Converter project provides a versatile and user-friendly solution for 
 
 The key features of this Unit Converter project include:
 
-- Support for multiple units of measurement, including length, weight, volume, and more
+- Support for multiple units of measurement, including length, weight, volume (work in progress), and more
 - Easy-to-use and user-friendly conversion interface
 - Supports both light and dark mode (work in progress)
 - Efficient CLI for advanced users
