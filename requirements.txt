@@ -1,3 +1,4 @@
 flask
 forex_python
 werkzeug>=3.0.1 
+requests>=2.32.0 # not directly required, pinned by Snyk to avoid a vulnerability
