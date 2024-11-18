@@ -5,24 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet" />
-  <!-- Add favicon -->
-  <!-- favicon is at /static/images/favicon.ico -->
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" />
-  <script>
-    // On page load, set the theme according to user preference or localStorage
-    (function () {
-      if (
-        localStorage.theme === "dark" ||
-        (!("theme" in localStorage) &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches)
-      ) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    })();
-  </script>
-
   <title>Unit Converter</title>
 </head>
 
@@ -33,10 +16,6 @@
         <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
           Unit Converter
         </h1>
-        <label class="flex items-center">
-          <span class="mr-2 text-gray-700 dark:text-gray-300">Dark mode</span>
-          <input id="darkModeToggle" type="checkbox" class="form-checkbox" />
-        </label>
       </div>
       <label for="category">Category:</label>
       <select id="category" class="form-select block w-full mt-1 mb-4"></select>
@@ -56,7 +35,7 @@
   </div>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-    $(document).ready(function () {
+    document.addEventListener("DOMContentLoaded", function () {
       function fetchCategories() {
         $.get("/categories", function (data) {
           $("#category").empty();
@@ -68,61 +47,45 @@
           fetchUnits();
         });
       }
-    });
-
-
-    function fetchUnits() {
-      const category = $("#category").val();
-      $.get("/units", { category: category }, function (data) {
-        $("#fromUnit").empty();
-        $("#toUnit").empty();
-        data.forEach((unit) => {
-          let optionFrom = document.createElement('option');
-          optionFrom.textContent = unit;
-          $("#fromUnit").append(optionFrom);
-
-          let optionTo = document.createElement('option');
-          optionTo.textContent = unit;
-          $("#toUnit").append(optionTo);
+  
+      function fetchUnits() {
+        const category = $("#category").val();
+        $.get("/units", { category: category }, function (data) {
+          $("#fromUnit").empty();
+          $("#toUnit").empty();
+          data.forEach((unit) => {
+            let optionFrom = document.createElement('option');
+            optionFrom.textContent = unit;
+            $("#fromUnit").append(optionFrom);
+  
+            let optionTo = document.createElement('option');
+            optionTo.textContent = unit;
+            $("#toUnit").append(optionTo);
+          });
         });
-      });
-    }
-
-
-    function convert() {
-      const value = parseFloat($("#value").val());
-      const from_unit = $("#fromUnit").val();
-      const to_unit = $("#toUnit").val();
-
-      $.post(
-        "/convert",
-        { value: value, from_unit: from_unit, to_unit: to_unit },
-        function (data) {
-          $("#result").text(data.result);
-        }
-      ).fail(function () {
-        alert("An error occurred. Please check your input and try again.");
-      });
-    }
-
-    $("#category").change(fetchUnits);
-    $("#convertBtn").click(convert);
-
-    fetchCategories();
-
-    // Add the dark mode toggle script in the body section
-    document
-      .getElementById("darkModeToggle")
-      .addEventListener("change", function () {
-        if (this.checked) {
-          document.documentElement.classList.add("dark");
-          localStorage.theme = "dark";
-        } else {
-          document.documentElement.classList.remove("dark");
-          localStorage.theme = "light";
-        }
-      });
-      });
+      }
+  
+      function convert() {
+        const value = parseFloat($("#value").val());
+        const from_unit = $("#fromUnit").val();
+        const to_unit = $("#toUnit").val();
+  
+        $.post(
+          "/convert",
+          { value: value, from_unit: from_unit, to_unit: to_unit },
+          function (data) {
+            $("#result").text(data.result);
+          }
+        ).fail(function () {
+          alert("An error occurred. Please check your input and try again.");
+        });
+      }
+  
+      $("#category").change(fetchUnits);
+      $("#convertBtn").click(convert);
+  
+      fetchCategories();
+    });
   </script>
 </body>
 
