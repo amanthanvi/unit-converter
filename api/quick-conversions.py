@@ -1,59 +1,71 @@
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
 import json
 from converter import UnitConverter
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        try:
-            # Parse query parameters
-            parsed_path = urlparse(self.path)
-            query_params = parse_qs(parsed_path.query)
-            
-            value = query_params.get('value', [None])[0]
-            unit = query_params.get('unit', [None])[0]
-            
-            if value:
-                value = float(value)
-            
-            if not all([value is not None, unit]):
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                error_response = {'error': 'Missing required parameters'}
-                self.wfile.write(json.dumps(error_response).encode())
-                return
-            
-            # Initialize converter
-            converter = UnitConverter()
-            
-            # Get quick conversions
-            conversions = converter.get_quick_conversions(value, unit)
-            
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            self.wfile.write(json.dumps(conversions).encode())
-            
-        except ValueError as e:
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            error_response = {'error': str(e)}
-            self.wfile.write(json.dumps(error_response).encode())
-            
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            error_response = {'error': 'Failed to get quick conversions: ' + str(e)}
-            self.wfile.write(json.dumps(error_response).encode())
+def handler(request, context):
+    """
+    Vercel serverless function to get quick conversions for a given value and unit.
+    """
+    headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+    
+    # Handle OPTIONS request for CORS
+    if request.method == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': ''
+        }
+    
+    # Only allow GET requests
+    if request.method != 'GET':
+        return {
+            'statusCode': 405,
+            'headers': headers,
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+    
+    try:
+        # Parse query parameters
+        value = request.args.get('value')
+        unit = request.args.get('unit')
+        
+        if value:
+            value = float(value)
+        
+        if not all([value is not None, unit]):
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Missing required parameters'})
+            }
+        
+        # Initialize converter
+        converter = UnitConverter()
+        
+        # Get quick conversions
+        conversions = converter.get_quick_conversions(value, unit)
+        
+        # Return success response
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(conversions)
+        }
+        
+    except ValueError as e:
+        return {
+            'statusCode': 400,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': 'Failed to get quick conversions: ' + str(e)})
+        }

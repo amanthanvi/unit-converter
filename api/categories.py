@@ -1,34 +1,31 @@
-from http.server import BaseHTTPRequestHandler
 import json
-import sys
-import os
-
 from converter import UnitConverter
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        try:
-            # Initialize converter
-            converter = UnitConverter()
-            
-            # Get categories
-            categories = converter.get_categories()
-            
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            self.wfile.write(json.dumps(categories).encode())
-            return
-            
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            error_response = {'error': str(e)}
-            self.wfile.write(json.dumps(error_response).encode())
-            return
+def handler(request, context):
+    """Handle GET request for categories"""
+    try:
+        # Initialize converter
+        converter = UnitConverter()
+        
+        # Get categories
+        categories = converter.get_categories()
+        
+        # Return response
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps(categories)
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': str(e)})
+        }

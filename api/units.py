@@ -1,56 +1,67 @@
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
 import json
 from converter import UnitConverter
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        try:
-            # Parse query parameters
-            parsed_path = urlparse(self.path)
-            query_params = parse_qs(parsed_path.query)
-            
-            category = query_params.get('category', [None])[0]
-            
-            if not category:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                error_response = {'error': 'Category parameter is required'}
-                self.wfile.write(json.dumps(error_response).encode())
-                return
-            
-            # Initialize converter
-            converter = UnitConverter()
-            
-            # Get units
-            units = converter.get_units(category)
-            
-            if not units:
-                self.send_response(404)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                
-                error_response = {'error': 'Invalid category'}
-                self.wfile.write(json.dumps(error_response).encode())
-                return
-            
-            # Send response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            self.wfile.write(json.dumps(units).encode())
-            
-        except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            
-            error_response = {'error': str(e)}
-            self.wfile.write(json.dumps(error_response).encode())
+def handler(request, context):
+    """
+    Vercel serverless function to get units for a specific category.
+    """
+    headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+    
+    # Handle OPTIONS request for CORS
+    if request.method == 'OPTIONS':
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': ''
+        }
+    
+    # Only allow GET requests
+    if request.method != 'GET':
+        return {
+            'statusCode': 405,
+            'headers': headers,
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+    
+    try:
+        # Parse query parameters
+        category = request.args.get('category')
+        
+        if not category:
+            return {
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Category parameter is required'})
+            }
+        
+        # Initialize converter
+        converter = UnitConverter()
+        
+        # Get units
+        units = converter.get_units(category)
+        
+        if not units:
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps({'error': 'Invalid category'})
+            }
+        
+        # Return success response
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(units)
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': headers,
+            'body': json.dumps({'error': str(e)})
+        }
