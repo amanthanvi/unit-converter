@@ -422,7 +422,7 @@
                 // API Methods
                 async fetchCategories() {
                     try {
-                        const response = await fetch('/categories');
+                        const response = await fetch('/api/categories');
                         this.categories = await response.json();
                     } catch (error) {
                         this.showToast('Failed to load categories', 'error');
@@ -431,7 +431,7 @@
 
                 async fetchUnits(category) {
                     try {
-                        const response = await fetch(`/units?category=${category}`);
+                        const response = await fetch(`/api/units?category=${category}`);
                         this.units = await response.json();
                     } catch (error) {
                         this.showToast('Failed to load units', 'error');
@@ -448,7 +448,7 @@
                         formData.append('from_unit', this.fromUnit);
                         formData.append('to_unit', this.toUnit);
 
-                        const response = await fetch('/convert', {
+                        const response = await fetch('/api/convert', {
                             method: 'POST',
                             body: formData
                         });
@@ -480,7 +480,7 @@
                     if (!this.fromValue || !this.fromUnit) return;
 
                     try {
-                        const response = await fetch(`/quick-conversions?value=${this.fromValue}&unit=${this.fromUnit}`);
+                        const response = await fetch(`/api/quick-conversions?value=${this.fromValue}&unit=${this.fromUnit}`);
                         this.quickConversions = await response.json();
                         
                         // Reset batch conversion when units change
@@ -537,7 +537,7 @@
                         // Get all units in the same category
                         const allUnits = this.units.filter(u => u.id !== this.fromUnit).map(u => u.id);
                         
-                        const response = await fetch('/batch-convert', {
+                        const response = await fetch('/api/batch-convert', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
