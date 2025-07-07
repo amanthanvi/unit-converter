@@ -1,11 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import sys
-import os
 from urllib.parse import parse_qs
-
-# Add parent directory to path to import converter
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from converter import UnitConverter
 
 class handler(BaseHTTPRequestHandler):

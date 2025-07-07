@@ -3,8 +3,6 @@ import json
 import sys
 import os
 
-# Add parent directory to path to import converter
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from converter import UnitConverter
 
 class handler(BaseHTTPRequestHandler):
@@ -23,6 +21,7 @@ class handler(BaseHTTPRequestHandler):
             self.end_headers()
             
             self.wfile.write(json.dumps(categories).encode())
+            return
             
         except Exception as e:
             self.send_response(500)
@@ -32,3 +31,4 @@ class handler(BaseHTTPRequestHandler):
             
             error_response = {'error': str(e)}
             self.wfile.write(json.dumps(error_response).encode())
+            return

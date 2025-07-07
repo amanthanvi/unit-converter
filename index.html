@@ -230,7 +230,7 @@
                     <span class="mr-2">🌍</span> Real-World Context
                 </h3>
                 <div class="space-y-3">
-                    <template x-for="comp in result.comparisons" :key="comp.description">
+                    <template x-for="comp in (result?.comparisons || [])" :key="comp.description">
                         <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                             <div class="flex-1">
                                 <p class="text-gray-700 dark:text-gray-300" x-text="comp.description"></p>
@@ -251,7 +251,7 @@
                 <h3 class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                     <span class="mr-2">📚</span> Did You Know?
                 </h3>
-                <p class="text-gray-700 dark:text-gray-300 leading-relaxed" x-text="result.history"></p>
+                <p class="text-gray-700 dark:text-gray-300 leading-relaxed" x-text="result?.history"></p>
             </div>
 
             <!-- Visualization -->
