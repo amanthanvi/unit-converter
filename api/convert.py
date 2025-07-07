@@ -1,4 +1,5 @@
 import json
+import cgi
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs
 from converter import UnitConverter
@@ -9,29 +10,62 @@ class handler(BaseHTTPRequestHandler):
         Handle POST request to convert units.
         """
         try:
-            # Read request body
-            content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else ''
+            # Get content type
+            content_type = self.headers.get('Content-Type', '')
             
-            # Try to parse as JSON first
-            try:
-                data = json.loads(body)
-                value = float(data.get('value'))
-                from_unit = data.get('from_unit')
-                to_unit = data.get('to_unit')
-            except json.JSONDecodeError:
-                # Fall back to form data parsing
-                parsed_data = parse_qs(body)
-                value = float(parsed_data.get('value', [None])[0])
-                from_unit = parsed_data.get('from_unit', [None])[0]
-                to_unit = parsed_data.get('to_unit', [None])[0]
+            # Initialize variables
+            value = None
+            from_unit = None
+            to_unit = None
+            
+            if 'multipart/form-data' in content_type:
+                # Parse multipart form data
+                form = cgi.FieldStorage(
+                    fp=self.rfile,
+                    headers=self.headers,
+                    environ={'REQUEST_METHOD': 'POST'}
+                )
+                value = form.getvalue('value')
+                from_unit = form.getvalue('from_unit')
+                to_unit = form.getvalue('to_unit')
+            else:
+                # Read request body
+                content_length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(content_length).decode('utf-8') if content_length > 0 else ''
+                
+                # Try to parse as JSON first
+                if 'application/json' in content_type:
+                    try:
+                        data = json.loads(body)
+                        value = data.get('value')
+                        from_unit = data.get('from_unit')
+                        to_unit = data.get('to_unit')
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                else:
+                    # Fall back to URL-encoded form data parsing
+                    parsed_data = parse_qs(body)
+                    value = parsed_data.get('value', [None])[0] if 'value' in parsed_data else None
+                    from_unit = parsed_data.get('from_unit', [None])[0] if 'from_unit' in parsed_data else None
+                    to_unit = parsed_data.get('to_unit', [None])[0] if 'to_unit' in parsed_data else None
             
             if not all([value is not None, from_unit, to_unit]):
                 self.send_response(400)
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
-                self.wfile.write(json.dumps({'error': 'Missing required parameters'}).encode('utf-8'))
+                self.wfile.write(json.dumps({'error': f'Missing required parameters. Got value={value}, from_unit={from_unit}, to_unit={to_unit}'}).encode('utf-8'))
+                return
+            
+            # Convert value to float
+            try:
+                value = float(value)
+            except (TypeError, ValueError):
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': f'Invalid value: {value}'}).encode('utf-8'))
                 return
             
             # Initialize converter
