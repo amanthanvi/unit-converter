@@ -1,0 +1,30 @@
+{
+  "name": "Unit Converter Pro",
+  "short_name": "UnitConvert",
+  "description": "Smart unit conversions with real-world context and educational insights",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["utilities", "education"],
+  "shortcuts": [
+    {
+      "name": "Length Converter",
+      "url": "/?category=length",
+      "description": "Convert between length units"
+    },
+    {
+      "name": "Currency Converter",
+      "url": "/?category=currency",
+      "description": "Convert between currencies"
+    }
+  ]
+}

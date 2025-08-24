@@ -1,16 +1,24 @@
 {
-  "name": "converter_proj_test",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "unit-converter-pro",
+  "version": "2.0.0",
+  "description": "An intelligent, educational unit converter with real-world comparisons and visualizations",
+  "main": "app.py",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"npm run watch:css\" \"python app.py\"",
+    "watch:css": "tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --watch",
+    "build:css": "tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --minify",
+    "build": "npm run build:css",
+    "vercel-build": "npm run build:css"
   },
-  "keywords": [],
+  "keywords": ["unit-converter", "education", "visualization", "pwa"],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
     "postcss": "^8.5.0",
     "tailwindcss": "^3.4.15"
   }
