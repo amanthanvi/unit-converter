@@ -250,17 +250,14 @@ class UnitConverter:
         """Get units for a specific category"""
         if category not in self.categories:
             return []
-
-        units = []
-        for unit_id, unit_data in self.categories[category]["units"].items():
-            units.append(
-                {
-                    "id": unit_id,
-                    "name": unit_data["name"],
-                    "symbol": unit_data.get("symbol", unit_id),
-                }
-            )
-        return units
+        return [
+            {
+                "id": unit_id,
+                "name": unit_data["name"],
+                "symbol": unit_data.get("symbol", unit_id),
+            }
+            for unit_id, unit_data in self.categories[category]["units"].items()
+        ]
 
     def convert(self, value: float, from_unit: str, to_unit: str) -> Dict[str, Any]:
         """Convert between units with additional context"""
@@ -299,14 +296,21 @@ class UnitConverter:
         }
 
     def _convert_temperature(self, value: float, from_unit: str, to_unit: str) -> float:
-        """Convert between temperature units"""
+        """Convert between temperature units with absolute zero validation"""
         # Convert to Celsius first
         if from_unit == "fahrenheit":
             celsius = (value - 32) * 5 / 9
         elif from_unit == "kelvin":
+            # Kelvin cannot be negative
+            if value < 0:
+                raise ValueError("Temperature below absolute zero")
             celsius = value - 273.15
         else:
             celsius = value
+
+        # Physical constraint: absolute zero
+        if celsius < -273.15 - 1e-9:
+            raise ValueError("Temperature below absolute zero")
 
         # Convert from Celsius to target
         if to_unit == "fahrenheit":
@@ -371,54 +375,93 @@ class UnitConverter:
             )
 
     def _load_fallback_rates(self) -> Dict[str, float]:
-        """Load static fallback USD-based currency rates from JSON file or built-in defaults."""
+        """Load static fallback rates and normalize to USD base.
+
+        Accepts either:
+          - {"USD": 1.0, "EUR": 0.92, ...}
+          - {"base": "EUR", "rates": {"USD": 1.25, "GBP": 0.8, ...}}
+        Raises:
+          - FileNotFoundError if file is missing
+          - json.JSONDecodeError if JSON is invalid
+          - ValueError if structure is unsupported or lacks required keys
+        """
         path = (
             os.getenv("CURRENCY_FALLBACK_PATH")
             or os.getenv("FOREX_FALLBACK_JSON")
             or "data/forex_fallback.json"
         )
-        rates: Dict[str, float] = {}
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, dict):
-                    for k, v in data.items():
-                        try:
-                            rates[str(k).upper()] = float(v)
-                        except (TypeError, ValueError):
-                            continue
-        except Exception:
-            # Provide a minimal built-in fallback
-            rates = {
-                "USD": 1.0,
-                "EUR": 0.92,
-                "GBP": 0.78,
-                "JPY": 155.0,
-                "CAD": 1.32,
-                "AUD": 1.50,
-            }
 
-        # Ensure USD present and normalized to 1.0
-        if "USD" not in rates:
-            rates["USD"] = 1.0
+        # Let exceptions propagate for tests to assert exact failures
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        base = "USD"
+        rates_src: Dict[str, Any] = {}
+
+        if isinstance(data, dict) and "rates" in data:
+            # structured format with base
+            base = str(data.get("base", "USD")).upper()
+            rates_map = data["rates"]
+            if not isinstance(rates_map, dict):
+                raise ValueError("Invalid rates structure in fallback JSON")
+            rates_src = {str(k).upper(): rates_map[k] for k in rates_map}
+        elif isinstance(data, dict):
+            # flat map assumed USD base
+            base = "USD"
+            rates_src = {str(k).upper(): v for k, v in data.items()}
         else:
-            try:
-                if rates["USD"] != 1.0:
-                    base = float(rates["USD"])
-                    for k in list(rates.keys()):
-                        try:
-                            rates[k] = float(rates[k]) / base
-                        except Exception:
-                            # drop invalid entries
-                            try:
-                                del rates[k]
-                            except Exception:
-                                pass
-                    rates["USD"] = 1.0
-            except Exception:
-                rates["USD"] = 1.0
+            raise ValueError("Unsupported fallback JSON structure")
 
-        return rates
+        # Coerce to floats where possible
+        tmp: Dict[str, Optional[float]] = {}
+        for k, v in rates_src.items():
+            try:
+                tmp[k] = float(v)
+            except (TypeError, ValueError):
+                tmp[k] = None
+
+        # Normalize to USD base so that rates[cur] == CUR per 1 USD
+        # If base is USD, ensure USD=1.0 and drop invalids
+        if base == "USD":
+            # Normalize to USD=1.0, handling None safely
+            usd_val = tmp.get("USD", 1.0)
+            try:
+                usd_val_f = float(usd_val)
+            except (TypeError, ValueError):
+                usd_val_f = 1.0
+            if usd_val_f != 1.0:
+                denom = usd_val_f
+                tmp = {
+                    cur: (None if rate is None else float(rate) / denom)
+                    for cur, rate in tmp.items()
+                }
+            tmp["USD"] = 1.0
+            # Drop invalid entries
+            rates = {cur: rate for cur, rate in tmp.items() if rate is not None}
+            return rates
+
+        # Non-USD base: convert to USD-based using rates(cur)/rates(USD) where rates are per 1 base
+        if base not in tmp:
+            # If no explicit base rate present (common), assume base=1.0 in its own units
+            tmp[base] = 1.0
+        usd_per_base = tmp.get("USD")
+        if usd_per_base in (None, 0.0):
+            raise ValueError("Fallback JSON lacks usable USD rate for normalization")
+
+        base_to_usd = 1.0 / float(
+            usd_per_base
+        )  # multiply base-denominated rates by this to get per USD
+        normalized: Dict[str, float] = {"USD": 1.0}
+        for cur, rate in tmp.items():
+            if cur == "USD":
+                continue
+            if rate is None:
+                continue
+            # rate = CUR per 1 BASE; per USD = (CUR/BASE) / (USD/BASE) = CUR per USD
+            normalized[cur] = float(rate) / float(usd_per_base)
+
+        # Ensure EUR value consistency if base was EUR (sanity)
+        return normalized
 
     def _convert_standard(
         self, value: float, from_unit: str, to_unit: str, category: str

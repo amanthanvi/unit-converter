@@ -15,10 +15,22 @@ def resolve_origin(origin_header: Optional[str]) -> str:
     return allowed_list[0] if allowed_list else "null"
 
 
+def request_id(handler) -> str:
+    """Return a sanitized request id from headers or generate a new UUID.
+    Strips CR, LF, and colon to prevent HTTP response splitting."""
+    try:
+        rid = handler.headers.get("X-Request-Id")
+    except Exception:
+        rid = None
+    if rid:
+        rid = rid.replace("\r", "").replace("\n", "").replace(":", "")
+    return rid if rid else str(uuid.uuid4())
+
+
 def _ensure_request_id(handler) -> str:
     rid = getattr(handler, "_request_id", None)
     if not rid:
-        rid = handler.headers.get("X-Request-Id") or str(uuid.uuid4())
+        rid = request_id(handler)
         setattr(handler, "_request_id", rid)
     return rid
 

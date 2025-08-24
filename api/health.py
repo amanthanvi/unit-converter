@@ -1,19 +1,15 @@
 import json
-from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
-from api._common import ok, error, allow_options, json_log
+from api._common import ok, error, allow_options, resolve_origin
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            now = datetime.now(timezone.utc).isoformat()
             # Standardized minimal payload; envelope handled by ok(...)
             payload = {"status": "ok"}
-            json_log("info", "v1.health.request", time=now)
             ok(self, payload, methods=["GET", "OPTIONS"])
         except Exception as e:
-            json_log("error", "v1.health.error", message=str(e))
             error(
                 self,
                 500,
