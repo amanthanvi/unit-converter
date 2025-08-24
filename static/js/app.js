@@ -128,8 +128,8 @@
 						signal: this._convertCtrl.signal,
 					});
 
-					// payload contains top-level result, formatted, to_unit, from_unit, meta
-					this.result = payload;
+					// payload uses envelope { ok, data, meta }
+					this.result = (payload && payload.data) || payload;
 					this._updateFallbackIndicator(payload && payload.meta);
 
 					// Add to history
@@ -158,7 +158,7 @@
 						{ method: "GET" }
 					);
 					const list =
-						(payload && (payload.result || payload.data)) ||
+						(payload && (payload.data || payload.result)) ||
 						payload ||
 						[];
 					this.quickConversions = Array.isArray(list) ? list : [];

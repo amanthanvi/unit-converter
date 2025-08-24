@@ -70,26 +70,28 @@ def test_v1_quick_conversions_envelope_and_currency_meta(monkeypatch):
     payload = json.loads(h.wfile.getvalue().decode("utf-8"))
     assert payload.get("ok") is True
 
-    # Envelope: result is a list of quick conversions
-    result = payload.get("result")
-    assert isinstance(result, list)
-    assert len(result) > 0
-    sample = result[0]
+    # Envelope: data is a list of quick conversions
+    data = payload.get("data")
+    assert isinstance(data, list)
+    assert len(data) > 0
+    sample = data[0]
     # Each item should have expected fields
     assert "unit" in sample and "name" in sample and "formatted" in sample
 
-    # Meta present with request_id and currency provenance
+    # Meta present with request_id and currency provenance (nested under meta.currency)
     meta = payload.get("meta", {})
     assert isinstance(meta, dict)
     # request_id present and RFC7230-safe
     rid = meta.get("request_id")
     assert isinstance(rid, str) and len(rid) > 0
     assert _tchar_safe(rid)
-    # rates_source and timestamp present (fallback mode)
-    assert meta.get("rates_source") == "fallback"
-    assert meta.get("fallback_forced") is True
+    # currency provenance present in fallback mode
+    currency_meta = meta.get("currency") or {}
+    assert isinstance(currency_meta, dict)
+    assert currency_meta.get("rates_source") == "fallback"
+    assert currency_meta.get("fallback_forced") is True
     # Timestamp-ish field present
-    assert isinstance(meta.get("rates_timestamp"), str)
+    assert isinstance(currency_meta.get("rates_timestamp"), str)
 
     # X-Request-Id header equals payload meta.request_id
     assert h._headers_sent.get("X-Request-Id") == rid

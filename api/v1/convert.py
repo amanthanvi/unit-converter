@@ -28,4 +28,5 @@ class handler(BaseHTTPRequestHandler):
         return result
 
     def do_OPTIONS(self):
-        allow_options(self, methods=["POST", "OPTIONS"])
+        # Expose all standard methods for consistent preflight behavior
+        allow_options(self, methods=["GET", "POST", "OPTIONS"])

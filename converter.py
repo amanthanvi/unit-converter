@@ -298,7 +298,7 @@ class UnitConverter:
         if category == "currency":
             meta = getattr(self, "_currency_meta", None)
             if isinstance(meta, dict):
-                resp["meta"] = dict(meta)
+                resp["meta"] = {"currency": dict(meta)}
         return resp
 
     def _convert_temperature(self, value: float, from_unit: str, to_unit: str) -> float:

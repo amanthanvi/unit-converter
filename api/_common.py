@@ -112,19 +112,18 @@ def ok(
     o = origin or resolve_origin(handler.headers.get("Origin"))
     headers = _base_headers(o, methods)
 
-    # Build uniform envelope
+    # Build uniform envelope: {"ok": true, "data": ..., "meta": {...}}
     payload: Dict[str, Any] = {"ok": True}
     meta_block: Dict[str, Any] = {}
 
-    # If the handler already returned a dict with conversion-style keys, lift them
-    if isinstance(data, dict):
-        # Extract meta from data if present
-        if "meta" in data and isinstance(data["meta"], dict):
-            meta_block.update(data["meta"])
-            data = {k: v for k, v in data.items() if k != "meta"}
-        payload.update(data)
-    else:
-        payload["result"] = data
+    # Extract meta from handler result if present
+    if isinstance(data, dict) and "meta" in data and isinstance(data["meta"], dict):
+        meta_block.update(data["meta"])
+        data = {k: v for k, v in data.items() if k != "meta"}
+
+    # Unwrap {"data": ...} wrapper if provided by handler
+    body = data.get("data") if isinstance(data, dict) and "data" in data else data
+    payload["data"] = body
 
     if meta:
         meta_block.update(meta)

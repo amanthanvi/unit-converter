@@ -21,8 +21,9 @@ class handler(BaseHTTPRequestHandler):
         json_log("info", "v1.quick_conversions.request", unit=unit_str)
         converter = UnitConverter()
         conversions = converter.get_quick_conversions(value_f, unit_str)
-        # Include currency rates metadata in envelope meta when applicable
-        # Determine if the source unit is in the currency category
+        # Build standardized envelope payload for ok(...): {"ok": true, "data": [...], "meta": {...}}
+        resp = {"data": conversions}
+        # If currency category, propagate currency provenance into meta.currency
         category = None
         for cat_id, cat_data in converter.categories.items():
             if unit_str in cat_data.get("units", {}):
@@ -30,11 +31,9 @@ class handler(BaseHTTPRequestHandler):
                 break
         if category == "currency":
             meta = getattr(converter, "_currency_meta", None)
-            resp = {"result": conversions}
             if isinstance(meta, dict):
-                resp["meta"] = dict(meta)
-            return resp
-        return {"result": conversions}
+                resp["meta"] = {"currency": dict(meta)}
+        return resp
 
     def do_OPTIONS(self):
         allow_options(self, methods=["GET", "OPTIONS"])
