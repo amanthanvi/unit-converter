@@ -166,7 +166,7 @@ class UnitConverter:
         }
         return currencies
 
-    def _load_comparisons(self) -> Dict[str, List[Dict[str, Any]]]:
+    def _load_comparisons(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
         """Load real-world comparisons for different units"""
         return {
             "length": {
@@ -352,31 +352,70 @@ class UnitConverter:
 
     def _load_fallback_rates(self) -> Dict[str, float]:
         """
-        Load fallback currency rates from JSON file.
-        Expected structure:
-        { "base": "USD", "date": "YYYY-MM-DD", "rates": { "EUR": 0.92, ... } }
+        Load fallback currency rates from JSON file with basic schema validation.
+
+        Env precedence:
+        - CURRENCY_FALLBACK_PATH (preferred)
+        - FOREX_FALLBACK_JSON (legacy, supported for compatibility)
+        - data/forex_fallback.json (default)
+
+        Expected structure (USD-based recommended):
+        {
+          "base": "USD",
+          "date": "YYYY-MM-DD",
+          "rates": { "EUR": 0.92, "GBP": 0.8, ... }
+        }
         """
-        fallback_path = os.environ.get("FOREX_FALLBACK_JSON", "data/forex_fallback.json")
-        with open(fallback_path, "r", encoding="utf-8") as f:
+        path = (
+            os.environ.get("CURRENCY_FALLBACK_PATH")
+            or os.environ.get("FOREX_FALLBACK_JSON")
+            or "data/forex_fallback.json"
+        )
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
+
+        if not isinstance(data, dict):
+            raise ValueError("Fallback data must be a JSON object")
+
         base = data.get("base", "USD")
-        rates = data.get("rates", {})
-        # Normalize to USD base if needed (current file uses USD)
+        rates = data.get("rates")
+        if not isinstance(rates, dict) or not rates:
+            raise ValueError("Fallback data must include non-empty 'rates' object")
+
+        # Coerce values to float and ensure positive
+        cleaned: Dict[str, Optional[float]] = {}
+        for cur, val in rates.items():
+            if val is None:
+                cleaned[cur] = None
+                continue
+            try:
+                fval = float(val)
+            except Exception:
+                raise ValueError(f"Invalid rate for {cur}: {val}")
+            if fval <= 0:
+                raise ValueError(f"Non-positive rate for {cur}: {val}")
+            cleaned[cur] = fval
+
+        # Normalize to USD base if needed
         if base != "USD":
-            # Convert from base->X to USD->X by dividing by base->USD
-            # If base->USD missing, raise
-            base_to_usd = 1.0 / (rates.get("USD") or 0.0)
-            if base_to_usd == 0.0:
-                raise ValueError("Fallback rates missing USD reference")
-            normalized = {}
-            for cur, rate in rates.items():
+            # Need rate for base->USD to normalize to USD base
+            base_to_usd = cleaned.get("USD")
+            if base_to_usd in (None, 0):
+                raise ValueError("Fallback rates missing USD reference for non-USD base")
+            normalized: Dict[str, Optional[float]] = {}
+            for cur, rate in cleaned.items():
                 if rate is None:
                     normalized[cur] = None
                 else:
-                    normalized[cur] = rate * base_to_usd
-            rates = normalized
-        rates["USD"] = 1.0
-        return rates
+                    # If rates are base->cur, to convert to USD->cur multiply by base->USD
+                    # USD->cur = (base->cur) * (USD->base). Since base->USD = x, USD->base = 1/x
+                    # But we have base->USD (cleaned['USD']), we want USD->cur:
+                    # USD->cur = (base->cur) / (base->USD)
+                    normalized[cur] = rate / base_to_usd
+            cleaned = normalized
+
+        cleaned["USD"] = 1.0
+        return cleaned  # type: ignore[return-value]
 
     def _convert_standard(self, value: float, from_unit: str, to_unit: str, category: str) -> float:
         """Convert between standard units using factors"""

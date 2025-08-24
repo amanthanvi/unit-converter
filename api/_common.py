@@ -27,7 +27,6 @@ def allow_options(handler, origin=None):
 
 
 def request_id(handler):
-    rid = None
     try:
         rid = handler.headers.get("X-Request-Id")
     except Exception:
@@ -35,18 +34,32 @@ def request_id(handler):
     return rid if rid else str(uuid.uuid4())
 
 
-def _log(handler, level, message, status=None):
+def begin(handler):
+    """Call at the start of each request handler to start latency timer."""
     try:
-        rid = handler.headers.get("X-Request-Id")
+        handler._start_ns = time.time_ns()
     except Exception:
-        rid = None
+        handler._start_ns = None
+
+
+def _latency_ms(handler):
+    try:
+        if getattr(handler, "_start_ns", None) is None:
+            return None
+        return round((time.time_ns() - handler._start_ns) / 1_000_000.0, 2)
+    except Exception:
+        return None
+
+
+def _log(handler, level, message, status=None):
     entry = {
         "ts": int(time.time() * 1000),
         "level": level,
-        "request_id": rid or "",
+        "request_id": request_id(handler),
         "method": getattr(handler, "command", None),
         "path": getattr(handler, "path", None),
         "status": status,
+        "latency_ms": _latency_ms(handler),
         "message": message,
     }
     try:
