@@ -60,7 +60,7 @@ def _base_headers(origin: str, methods: Optional[List[str]] = None) -> Dict[str,
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Methods": allow_methods,
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-Id",
-        "Access-Control-Expose-Headers": "X-Request-Id",
+        "Access-Control-Expose-Headers": "X-Request-Id, X-Correlation-Id",
         "Vary": "Origin",
         "Cache-Control": "no-store",
     }

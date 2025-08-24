@@ -379,11 +379,24 @@ class UnitConverter:
         if source is None:
             prev = getattr(self, "_currency_meta", None)
             source = prev.get("rates_source") if isinstance(prev, dict) else "live"
-        self._currency_meta = {
+        ts = self._cache_timestamp or now
+        age = 0.0
+        try:
+            age = float((now - ts).total_seconds())
+        except Exception:
+            age = 0.0
+        meta = {
             "rates_source": source,
+            "rates_timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+            "cache_age_seconds": age,
             "fallback_forced": force_fallback,
             "live_disabled": disable_live,
         }
+        if source == "fallback":
+            fp = getattr(self, "_last_fallback_path", None)
+            if fp:
+                meta["fallback_path"] = fp
+        self._currency_meta = meta
         # Convert using USD as base
         if rates.get(from_unit) and rates.get(to_unit):
             usd_value = value / rates[from_unit]
@@ -409,6 +422,11 @@ class UnitConverter:
             or os.getenv("FOREX_FALLBACK_JSON")
             or "data/forex_fallback.json"
         )
+        # Persist path used for provenance metadata
+        try:
+            setattr(self, "_last_fallback_path", path)
+        except Exception:
+            pass
 
         # Let exceptions propagate for tests to assert exact failures
         with open(path, "r", encoding="utf-8") as f:
