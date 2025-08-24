@@ -1,8 +1,15 @@
 {
-  "buildCommand": "npm run build:css",
-  "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+	"buildCommand": "npm run build:css",
+	"outputDirectory": ".",
+	"functions": {
+		"api/*.py": {
+			"runtime": "python3.11",
+			"memory": 128,
+			"maxDuration": 10
+		}
+	},
+	"rewrites": [
+		{ "source": "/api/(.*)", "destination": "/api/$1" },
+		{ "source": "/(.*)", "destination": "/index.html" }
+	]
 }

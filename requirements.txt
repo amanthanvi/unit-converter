@@ -1,5 +1,5 @@
 flask==3.0.0
 forex-python==1.6
 werkzeug>=3.0.1
-requests>=2.32.2
-urllib3>=2.2.2
+requests==2.32.3
+urllib3==2.2.3
