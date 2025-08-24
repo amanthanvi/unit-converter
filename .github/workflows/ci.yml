@@ -1,0 +1,62 @@
+name: CI
+
+on:
+    push:
+        branches: ["main", "master", "chore/stabilize-phase-1"]
+    pull_request:
+        branches: ["main", "master"]
+
+jobs:
+    node-build:
+        name: Build CSS (Node)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+            - name: Install dependencies
+              run: npm ci
+            - name: Build CSS
+              run: npm run build:css
+
+    python-tests:
+        name: Python Tests and Security
+        runs-on: ubuntu-latest
+        env:
+            CURRENCY_FALLBACK_ONLY: "1"
+            FOREX_FALLBACK_JSON: "data/forex_fallback.json"
+            PYTHONWARNINGS: "default"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+            - name: Install runtime deps
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r requirements.txt
+            - name: Install test and audit tooling
+              run: |
+                  pip install pytest pip-audit cyclonedx-bom
+            - name: Run tests
+              run: |
+                  pytest -q
+            - name: Pip Audit
+              run: |
+                  pip-audit -r requirements.txt || true
+            - name: Generate SBOM
+              run: |
+                  cyclonedx-bom -o sbom-python.json
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: python-artifacts
+                  path: |
+                      sbom-python.json
