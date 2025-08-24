@@ -15,20 +15,19 @@ def test_currency_fallback(monkeypatch, tmp_path):
     fallback_path = tmp_path / "forex_fallback.json"
     fallback_path.write_text(json.dumps(fallback), encoding="utf-8")
 
-    # Set env to point to the temp fallback
+    # Set env to point to the temp fallback and force fallback-only mode
     os.environ["FOREX_FALLBACK_JSON"] = str(fallback_path)
+    os.environ["CURRENCY_FALLBACK_ONLY"] = "1"
 
     # Monkeypatch CurrencyRates to raise on init or usage
     class BrokenCR:
         def __init__(self, *args, **kwargs):
             raise RuntimeError("network disabled")
 
-    # Import converter fresh to pick up monkeypatch
+    # Import converter and monkeypatch provider to force failure (no reload to preserve patch)
     import converter as conv_mod
 
     monkeypatch.setattr(conv_mod, "CurrencyRates", BrokenCR)
-
-    importlib.reload(conv_mod)
 
     conv = conv_mod.UnitConverter()
     # Convert 1 USD to EUR; fallback has EUR=0.9

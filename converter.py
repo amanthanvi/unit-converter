@@ -318,30 +318,43 @@ class UnitConverter:
             rates = self._currency_cache
         else:
             rates = None
-            # Try live rates
-            try:
-                cr = CurrencyRates()
-                live_rates = {}
-                for currency in self.categories["currency"]["units"]:
-                    if currency != "USD":
-                        try:
-                            live_rates[currency] = cr.get_rate("USD", currency)
-                        except Exception:
-                            live_rates[currency] = None
-                live_rates["USD"] = 1.0
-                rates = live_rates
-                self._currency_cache = rates
-                self._cache_timestamp = now
-            except Exception:
-                # Live fetch failed — fall back to static file
+
+            # Environment override to force fallback-only mode (for CI/tests/offline)
+            if (
+                os.environ.get("CURRENCY_FALLBACK_ONLY") == "1"
+                or os.environ.get("DISABLE_LIVE_FOREX") == "1"
+            ):
                 try:
                     rates = self._load_fallback_rates()
                     self._currency_cache = rates
                     self._cache_timestamp = now
                 except Exception as e2:
-                    raise ValueError(
-                        f"Currency conversion failed: live rates unavailable and fallback failed: {e2}"
-                    )
+                    raise ValueError(f"Currency conversion failed in fallback-only mode: {e2}")
+            else:
+                # Try live rates
+                try:
+                    cr = CurrencyRates()
+                    live_rates = {}
+                    for currency in self.categories["currency"]["units"]:
+                        if currency != "USD":
+                            try:
+                                live_rates[currency] = cr.get_rate("USD", currency)
+                            except Exception:
+                                live_rates[currency] = None
+                    live_rates["USD"] = 1.0
+                    rates = live_rates
+                    self._currency_cache = rates
+                    self._cache_timestamp = now
+                except Exception:
+                    # Live fetch failed — fall back to static file
+                    try:
+                        rates = self._load_fallback_rates()
+                        self._currency_cache = rates
+                        self._cache_timestamp = now
+                    except Exception as e2:
+                        raise ValueError(
+                            f"Currency conversion failed: live rates unavailable and fallback failed: {e2}"
+                        )
 
         # Convert using rates (USD base)
         if rates.get(from_unit) and rates.get(to_unit):

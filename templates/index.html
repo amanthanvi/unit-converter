@@ -1,869 +1,1315 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unit Converter Pro - Smart Unit Conversions with Real-World Context</title>
-    <meta name="description" content="Convert units with educational insights, real-world comparisons, and beautiful visualizations. More than just a converter.">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <link href="/static/css/output.css" rel="stylesheet">
-    
-    <!-- Favicon -->
-    <link rel="icon" href="/static/favicon.ico">
-    
-    <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#3b82f6">
-    
-    <!-- Alpine.js for interactivity -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- Chart.js for visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300" x-data="unitConverter()">
-    <!-- Header -->
-    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center shadow-glow">
-                        <span class="text-white text-xl">📐</span>
-                    </div>
-                    <h1 class="text-xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                        Unit Converter Pro
-                    </h1>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <!-- Quick Actions -->
-                    <button @click="showHistory = !showHistory" 
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            :class="showHistory ? 'bg-gray-100 dark:bg-gray-700' : ''"
-                            title="Conversion History">
-                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </button>
-                    
-                    <button @click="showFavorites = !showFavorites" 
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            :class="showFavorites ? 'bg-gray-100 dark:bg-gray-700' : ''"
-                            title="Favorites">
-                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                        </svg>
-                    </button>
-                    
-                    <!-- Share Button -->
-                    <button @click="shareConversion()" 
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            :class="result ? '' : 'opacity-50 cursor-not-allowed'"
-                            :disabled="!result"
-                            title="Share Conversion">
-                        <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.026-4.026m4.026 4.026a3 3 0 00-4.026-4.026M6 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                    </button>
-                    
-                    <!-- Theme Toggle -->
-                    <button @click="toggleTheme()" 
-                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            title="Toggle Theme">
-                        <svg x-show="!darkMode" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                        </svg>
-                        <svg x-show="darkMode" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>
+			Unit Converter Pro - Smart Unit Conversions with Real-World Context
+		</title>
+		<meta
+			name="description"
+			content="Convert units with educational insights, real-world comparisons, and beautiful visualizations. More than just a converter."
+		/>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Category Selection -->
-        <div class="mb-8">
-            <h2 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Choose a category</h2>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                <template x-for="category in categories" :key="category.id">
-                    <button @click="selectCategory(category)"
-                            :class="selectedCategory?.id === category.id ? 
+		<!-- Fonts -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lexend:wght@400;600;700&display=swap"
+			rel="stylesheet"
+		/>
+
+		<!-- Tailwind CSS -->
+		<link href="/static/css/output.css" rel="stylesheet" />
+
+		<!-- Favicon -->
+		<link rel="icon" href="/static/favicon.ico" />
+
+		<!-- PWA -->
+		<link rel="manifest" href="/static/manifest.json" />
+		<meta name="theme-color" content="#3b82f6" />
+
+		<!-- Alpine.js for interactivity -->
+		<script
+			defer
+			src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+		></script>
+
+		<!-- Chart.js for visualizations -->
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	</head>
+	<body
+		class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
+		x-data="unitConverter()"
+	>
+		<!-- Header -->
+		<header
+			class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-700"
+		>
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="flex items-center justify-between h-16">
+					<div class="flex items-center space-x-3">
+						<div
+							class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center shadow-glow"
+						>
+							<span class="text-white text-xl">📐</span>
+						</div>
+						<h1
+							class="text-xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent"
+						>
+							Unit Converter Pro
+						</h1>
+					</div>
+
+					<div class="flex items-center space-x-4">
+						<!-- Quick Actions -->
+						<button
+							@click="showHistory = !showHistory"
+							class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							:class="showHistory ? 'bg-gray-100 dark:bg-gray-700' : ''"
+							title="Conversion History"
+						>
+							<svg
+								class="w-5 h-5 text-gray-600 dark:text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+								></path>
+							</svg>
+						</button>
+
+						<button
+							@click="showFavorites = !showFavorites"
+							class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							:class="showFavorites ? 'bg-gray-100 dark:bg-gray-700' : ''"
+							title="Favorites"
+						>
+							<svg
+								class="w-5 h-5 text-gray-600 dark:text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+								></path>
+							</svg>
+						</button>
+
+						<!-- Share Button -->
+						<button
+							@click="shareConversion()"
+							class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							:class="result ? '' : 'opacity-50 cursor-not-allowed'"
+							:disabled="!result"
+							title="Share Conversion"
+						>
+							<svg
+								class="w-5 h-5 text-gray-600 dark:text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.026-4.026m4.026 4.026a3 3 0 00-4.026-4.026M6 12a3 3 0 11-6 0 3 3 0 016 0z"
+								></path>
+							</svg>
+						</button>
+
+						<!-- Theme Toggle -->
+						<button
+							@click="toggleTheme()"
+							class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							title="Toggle Theme"
+						>
+							<svg
+								x-show="!darkMode"
+								class="w-5 h-5 text-gray-600"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+								></path>
+							</svg>
+							<svg
+								x-show="darkMode"
+								class="w-5 h-5 text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+								></path>
+							</svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<!-- Category Selection -->
+			<div class="mb-8">
+				<h2
+					class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3"
+				>
+					Choose a category
+				</h2>
+				<div
+					class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3"
+				>
+					<template x-for="category in categories" :key="category.id">
+						<button
+							@click="selectCategory(category)"
+							:class="selectedCategory?.id === category.id ? 
                                    'ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/20' : 
                                    'hover:bg-gray-100 dark:hover:bg-gray-800'"
-                            class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 group">
-                        <div class="text-3xl mb-2 group-hover:scale-110 transition-transform" x-text="category.icon"></div>
-                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="category.name"></div>
-                    </button>
-                </template>
-            </div>
-        </div>
+							class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 group"
+						>
+							<div
+								class="text-3xl mb-2 group-hover:scale-110 transition-transform"
+								x-text="category.icon"
+							></div>
+							<div
+								class="text-sm font-medium text-gray-900 dark:text-gray-100"
+								x-text="category.name"
+							></div>
+						</button>
+					</template>
+				</div>
+			</div>
 
-        <!-- Conversion Interface -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6 mb-8" x-show="selectedCategory" x-transition>
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- From Section -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From</label>
-                    <div class="space-y-3">
-                        <input type="number" 
-                               x-model="fromValue" 
-                               @input="performConversion()"
-                               @keydown.enter="performConversion()"
-                               class="w-full px-4 py-3 text-lg font-medium border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                               placeholder="Enter value">
-                        
-                        <select x-model="fromUnit" 
-                                @change="performConversion()"
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                            <option value="">Select unit</option>
-                            <template x-for="unit in units" :key="unit.id">
-                                <option :value="unit.id" x-text="`${unit.name} (${unit.symbol})`"></option>
-                            </template>
-                        </select>
-                    </div>
-                </div>
+			<!-- Conversion Interface -->
+			<div
+				class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6 mb-8"
+				x-show="selectedCategory"
+				x-transition
+			>
+				<div class="grid md:grid-cols-2 gap-6">
+					<!-- From Section -->
+					<div>
+						<label
+							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							>From</label
+						>
+						<div class="space-y-3">
+							<input
+								type="number"
+								x-model="fromValue"
+								@input="performConversion()"
+								@keydown.enter="performConversion()"
+								class="w-full px-4 py-3 text-lg font-medium border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
+								placeholder="Enter value"
+							/>
 
-                <!-- Swap Button -->
-                <div class="flex items-center justify-center md:col-span-1 md:row-span-2">
-                    <button @click="swapUnits()" 
-                            class="p-3 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:rotate-180 duration-300"
-                            :disabled="!fromUnit || !toUnit">
-                        <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                        </svg>
-                    </button>
-                </div>
+							<select
+								x-model="fromUnit"
+								@change="performConversion()"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+							>
+								<option value="">Select unit</option>
+								<template x-for="unit in units" :key="unit.id">
+									<option
+										:value="unit.id"
+										x-text="`${unit.name} (${unit.symbol})`"
+									></option>
+								</template>
+							</select>
+						</div>
+					</div>
 
-                <!-- To Section -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To</label>
-                    <div class="space-y-3">
-                        <div class="relative">
-                            <input type="text" 
-                                   :value="result?.formatted || '—'" 
-                                   readonly
-                                   class="w-full px-4 py-3 text-lg font-medium border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white pr-12">
-                            <button @click="copyResult()" 
-                                    x-show="result"
-                                    class="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
-                                    title="Copy result">
-                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                </svg>
-                            </button>
-                        </div>
-                        
-                        <select x-model="toUnit" 
-                                @change="performConversion()"
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                            <option value="">Select unit</option>
-                            <template x-for="unit in units" :key="unit.id">
-                                <option :value="unit.id" x-text="`${unit.name} (${unit.symbol})`"></option>
-                            </template>
-                        </select>
-                    </div>
-                </div>
-            </div>
+					<!-- Swap Button -->
+					<div
+						class="flex items-center justify-center md:col-span-1 md:row-span-2"
+					>
+						<button
+							@click="swapUnits()"
+							class="p-3 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:rotate-180 duration-300"
+							:disabled="!fromUnit || !toUnit"
+						>
+							<svg
+								class="w-6 h-6 text-gray-600 dark:text-gray-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+								></path>
+							</svg>
+						</button>
+					</div>
 
-            <!-- Quick Conversions -->
-            <div x-show="quickConversions.length > 0" class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Quick conversions</h3>
-                    <button @click="showBatchConvert = !showBatchConvert"
-                            class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
-                        <span x-show="!showBatchConvert">Convert to all units</span>
-                        <span x-show="showBatchConvert">Show less</span>
-                    </button>
-                </div>
-                <div x-show="!showBatchConvert" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <template x-for="qc in quickConversions" :key="qc.unit">
-                        <button @click="selectQuickConversion(qc)"
-                                class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
-                            <div class="text-lg font-semibold text-gray-900 dark:text-white" x-text="qc.formatted"></div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400" x-text="qc.name"></div>
-                        </button>
-                    </template>
-                </div>
-                
-                <!-- Batch Conversion Results -->
-                <div x-show="showBatchConvert && batchResults.length > 0" x-transition class="space-y-2">
-                    <div class="max-h-64 overflow-y-auto">
-                        <template x-for="result in batchResults" :key="result.to_unit">
-                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
-                                 :class="result.success ? '' : 'opacity-50'">
-                                <div class="flex-1">
-                                    <span class="font-medium text-gray-900 dark:text-white" x-text="result.formatted || 'Error'"></span>
-                                    <span class="ml-2 text-sm text-gray-500 dark:text-gray-400" x-text="result.unit_name"></span>
-                                </div>
-                                <button @click="copyBatchResult(result)" 
-                                        x-show="result.success"
-                                        class="ml-3 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                                        title="Copy">
-                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </template>
-                    </div>
-                    <button @click="downloadBatchResults()" 
-                            class="w-full mt-3 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium">
-                        Download All Results
-                    </button>
-                </div>
-            </div>
-        </div>
+					<!-- To Section -->
+					<div>
+						<label
+							class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+							>To</label
+						>
+						<div class="space-y-3">
+							<div class="relative">
+								<input
+									type="text"
+									:value="result?.formatted || '—'"
+									readonly
+									class="w-full px-4 py-3 text-lg font-medium border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white pr-12"
+								/>
+								<button
+									@click="copyResult()"
+									x-show="result"
+									class="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
+									title="Copy result"
+								>
+									<svg
+										class="w-5 h-5 text-gray-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+										></path>
+									</svg>
+								</button>
+							</div>
 
-        <!-- Educational Content -->
-        <div x-show="result" x-transition class="space-y-6">
-            <!-- Real-World Comparisons -->
-            <div x-show="result?.comparisons?.length > 0" class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6">
-                <h3 class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                    <span class="mr-2">🌍</span> Real-World Context
-                </h3>
-                <div class="space-y-3">
-                    <template x-for="comp in result.comparisons" :key="comp.description">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                            <div class="flex-1">
-                                <p class="text-gray-700 dark:text-gray-300" x-text="comp.description"></p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    <span x-text="comp.value"></span> <span x-text="result.to_unit"></span>
-                                </p>
-                            </div>
-                            <div class="ml-4 text-right">
-                                <span class="text-lg font-semibold text-primary-600 dark:text-primary-400" x-text="comp.formatted"></span>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
+							<select
+								x-model="toUnit"
+								@change="performConversion()"
+								class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+							>
+								<option value="">Select unit</option>
+								<template x-for="unit in units" :key="unit.id">
+									<option
+										:value="unit.id"
+										x-text="`${unit.name} (${unit.symbol})`"
+									></option>
+								</template>
+							</select>
+						</div>
+					</div>
+				</div>
 
-            <!-- Historical Context -->
-            <div x-show="result?.history" class="bg-gradient-to-br from-secondary-50 to-primary-50 dark:from-secondary-900/20 dark:to-primary-900/20 rounded-2xl p-6">
-                <h3 class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
-                    <span class="mr-2">📚</span> Did You Know?
-                </h3>
-                <p class="text-gray-700 dark:text-gray-300 leading-relaxed" x-text="result.history"></p>
-            </div>
+				<!-- Quick Conversions -->
+				<div
+					x-show="quickConversions.length > 0"
+					class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700"
+				>
+					<div class="flex items-center justify-between mb-3">
+						<h3
+							class="text-sm font-medium text-gray-700 dark:text-gray-300"
+						>
+							Quick conversions
+						</h3>
+						<button
+							@click="showBatchConvert = !showBatchConvert"
+							class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+						>
+							<span x-show="!showBatchConvert"
+								>Convert to all units</span
+							>
+							<span x-show="showBatchConvert">Show less</span>
+						</button>
+					</div>
+					<div
+						x-show="!showBatchConvert"
+						class="grid grid-cols-2 md:grid-cols-4 gap-3"
+					>
+						<template x-for="qc in quickConversions" :key="qc.unit">
+							<button
+								@click="selectQuickConversion(qc)"
+								class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+							>
+								<div
+									class="text-lg font-semibold text-gray-900 dark:text-white"
+									x-text="qc.formatted"
+								></div>
+								<div
+									class="text-sm text-gray-500 dark:text-gray-400"
+									x-text="qc.name"
+								></div>
+							</button>
+						</template>
+					</div>
 
-            <!-- Visualization -->
-            <div x-show="showVisualization" class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6">
-                <h3 class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                    <span class="mr-2">📊</span> Visual Comparison
-                </h3>
-                <div class="h-64">
-                    <canvas id="conversionChart"></canvas>
-                </div>
-            </div>
-        </div>
+					<!-- Batch Conversion Results -->
+					<div
+						x-show="showBatchConvert && batchResults.length > 0"
+						x-transition
+						class="space-y-2"
+					>
+						<div class="max-h-64 overflow-y-auto">
+							<template
+								x-for="result in batchResults"
+								:key="result.to_unit"
+							>
+								<div
+									class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+									:class="result.success ? '' : 'opacity-50'"
+								>
+									<div class="flex-1">
+										<span
+											class="font-medium text-gray-900 dark:text-white"
+											x-text="result.formatted || 'Error'"
+										></span>
+										<span
+											class="ml-2 text-sm text-gray-500 dark:text-gray-400"
+											x-text="result.unit_name"
+										></span>
+									</div>
+									<button
+										@click="copyBatchResult(result)"
+										x-show="result.success"
+										class="ml-3 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+										title="Copy"
+									>
+										<svg
+											class="w-4 h-4 text-gray-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+											></path>
+										</svg>
+									</button>
+								</div>
+							</template>
+						</div>
+						<button
+							@click="downloadBatchResults()"
+							class="w-full mt-3 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors text-sm font-medium"
+						>
+							Download All Results
+						</button>
+					</div>
+				</div>
+			</div>
 
-        <!-- Conversion History Sidebar -->
-        <div x-show="showHistory" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-x-full"
-             x-transition:enter-end="opacity-100 transform translate-x-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform translate-x-0"
-             x-transition:leave-end="opacity-0 transform translate-x-full"
-             class="fixed right-0 top-16 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Conversion History</h3>
-                    <button @click="clearHistory()" class="text-sm text-red-600 hover:text-red-700">Clear</button>
-                </div>
-                <div class="space-y-3">
-                    <template x-for="item in history" :key="item.id">
-                        <button @click="restoreFromHistory(item)"
-                                class="w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white">
-                                        <span x-text="item.fromValue"></span> <span x-text="item.fromUnit"></span>
-                                        → <span x-text="item.result"></span> <span x-text="item.toUnit"></span>
-                                    </p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="item.category"></p>
-                                </div>
-                                <button @click.stop="toggleFavorite(item)" class="ml-2">
-                                    <svg class="w-5 h-5" :class="item.isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'" 
-                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </button>
-                    </template>
-                </div>
-                <div x-show="history.length === 0" class="text-center py-8">
-                    <p class="text-gray-500 dark:text-gray-400">No conversions yet</p>
-                </div>
-            </div>
-        </div>
+			<!-- Educational Content -->
+			<div x-show="result" x-transition class="space-y-6">
+				<!-- Real-World Comparisons -->
+				<div
+					x-show="result?.comparisons?.length > 0"
+					class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6"
+				>
+					<h3
+						class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+					>
+						<span class="mr-2">🌍</span> Real-World Context
+					</h3>
+					<div class="space-y-3">
+						<template
+							x-for="comp in result.comparisons"
+							:key="comp.description"
+						>
+							<div
+								class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg"
+							>
+								<div class="flex-1">
+									<p
+										class="text-gray-700 dark:text-gray-300"
+										x-text="comp.description"
+									></p>
+									<p
+										class="text-sm text-gray-500 dark:text-gray-400 mt-1"
+									>
+										<span x-text="comp.value"></span>
+										<span x-text="result.to_unit"></span>
+									</p>
+								</div>
+								<div class="ml-4 text-right">
+									<span
+										class="text-lg font-semibold text-primary-600 dark:text-primary-400"
+										x-text="comp.formatted"
+									></span>
+								</div>
+							</div>
+						</template>
+					</div>
+				</div>
 
-        <!-- Favorites Sidebar -->
-        <div x-show="showFavorites" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform translate-x-full"
-             x-transition:enter-end="opacity-100 transform translate-x-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform translate-x-0"
-             x-transition:leave-end="opacity-0 transform translate-x-full"
-             class="fixed right-0 top-16 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto">
-            <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Favorite Conversions</h3>
-                <div class="space-y-3">
-                    <template x-for="item in favorites" :key="item.id">
-                        <button @click="restoreFromHistory(item)"
-                                class="w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-medium text-gray-900 dark:text-white">
-                                        <span x-text="item.fromValue"></span> <span x-text="item.fromUnit"></span>
-                                        → <span x-text="item.result"></span> <span x-text="item.toUnit"></span>
-                                    </p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="item.category"></p>
-                                </div>
-                                <button @click.stop="toggleFavorite(item)" class="ml-2">
-                                    <svg class="w-5 h-5 text-red-500 fill-current" 
-                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </button>
-                    </template>
-                </div>
-                <div x-show="favorites.length === 0" class="text-center py-8">
-                    <p class="text-gray-500 dark:text-gray-400">No favorites yet</p>
-                </div>
-            </div>
-        </div>
-    </main>
+				<!-- Historical Context -->
+				<div
+					x-show="result?.history"
+					class="bg-gradient-to-br from-secondary-50 to-primary-50 dark:from-secondary-900/20 dark:to-primary-900/20 rounded-2xl p-6"
+				>
+					<h3
+						class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-3 flex items-center"
+					>
+						<span class="mr-2">📚</span> Did You Know?
+					</h3>
+					<p
+						class="text-gray-700 dark:text-gray-300 leading-relaxed"
+						x-text="result.history"
+					></p>
+				</div>
 
-    <!-- Loading Indicator -->
-    <div x-show="loading" class="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-            <p class="mt-4 text-gray-600 dark:text-gray-400">Converting...</p>
-        </div>
-    </div>
+				<!-- Visualization -->
+				<div
+					x-show="showVisualization"
+					class="bg-white dark:bg-gray-800 rounded-2xl shadow-soft p-6"
+				>
+					<h3
+						class="text-lg font-display font-semibold text-gray-900 dark:text-white mb-4 flex items-center"
+					>
+						<span class="mr-2">📊</span> Visual Comparison
+					</h3>
+					<div class="h-64">
+						<canvas id="conversionChart"></canvas>
+					</div>
+				</div>
+			</div>
 
-    <!-- Toast Notifications -->
-    <div class="fixed bottom-4 right-4 z-50">
-        <template x-for="toast in toasts" :key="toast.id">
-            <div x-show="toast.visible"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 transform translate-y-2"
-                 x-transition:enter-end="opacity-100 transform translate-y-0"
-                 x-transition:leave="transition ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 class="mb-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex items-center space-x-3"
-                 :class="toast.type === 'error' ? 'border-l-4 border-red-500' : 'border-l-4 border-green-500'">
-                <svg x-show="toast.type === 'success'" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <svg x-show="toast.type === 'error'" class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                <p class="text-gray-700 dark:text-gray-300" x-text="toast.message"></p>
-            </div>
-        </template>
-    </div>
+			<!-- Conversion History Sidebar -->
+			<div
+				x-show="showHistory"
+				x-transition:enter="transition ease-out duration-300"
+				x-transition:enter-start="opacity-0 transform translate-x-full"
+				x-transition:enter-end="opacity-100 transform translate-x-0"
+				x-transition:leave="transition ease-in duration-200"
+				x-transition:leave-start="opacity-100 transform translate-x-0"
+				x-transition:leave-end="opacity-0 transform translate-x-full"
+				class="fixed right-0 top-16 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto"
+			>
+				<div class="p-6">
+					<div class="flex items-center justify-between mb-4">
+						<h3
+							class="text-lg font-semibold text-gray-900 dark:text-white"
+						>
+							Conversion History
+						</h3>
+						<button
+							@click="clearHistory()"
+							class="text-sm text-red-600 hover:text-red-700"
+						>
+							Clear
+						</button>
+					</div>
+					<div class="space-y-3">
+						<template x-for="item in history" :key="item.id">
+							<button
+								@click="restoreFromHistory(item)"
+								class="w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+							>
+								<div class="flex items-center justify-between">
+									<div>
+										<p
+											class="font-medium text-gray-900 dark:text-white"
+										>
+											<span
+												x-text="item.fromValue"
+											></span>
+											<span x-text="item.fromUnit"></span>
+											→
+											<span x-text="item.result"></span>
+											<span x-text="item.toUnit"></span>
+										</p>
+										<p
+											class="text-xs text-gray-500 dark:text-gray-400"
+											x-text="item.category"
+										></p>
+									</div>
+									<button
+										@click.stop="toggleFavorite(item)"
+										class="ml-2"
+									>
+										<svg
+											class="w-5 h-5"
+											:class="item.isFavorite ? 'text-red-500 fill-current' : 'text-gray-400'"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+											></path>
+										</svg>
+									</button>
+								</div>
+							</button>
+						</template>
+					</div>
+					<div x-show="history.length === 0" class="text-center py-8">
+						<p class="text-gray-500 dark:text-gray-400">
+							No conversions yet
+						</p>
+					</div>
+				</div>
+			</div>
 
-    <script>
-        function unitConverter() {
-            return {
-                // State
-                categories: [],
-                selectedCategory: null,
-                units: [],
-                fromValue: '',
-                fromUnit: '',
-                toUnit: '',
-                result: null,
-                loading: false,
-                history: [],
-                favorites: [],
-                showHistory: false,
-                showFavorites: false,
-                darkMode: false,
-                toasts: [],
-                quickConversions: [],
-                showVisualization: false,
-                chart: null,
-                showBatchConvert: false,
-                batchResults: [],
+			<!-- Favorites Sidebar -->
+			<div
+				x-show="showFavorites"
+				x-transition:enter="transition ease-out duration-300"
+				x-transition:enter-start="opacity-0 transform translate-x-full"
+				x-transition:enter-end="opacity-100 transform translate-x-0"
+				x-transition:leave="transition ease-in duration-200"
+				x-transition:leave-start="opacity-100 transform translate-x-0"
+				x-transition:leave-end="opacity-0 transform translate-x-full"
+				class="fixed right-0 top-16 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-40 overflow-y-auto"
+			>
+				<div class="p-6">
+					<h3
+						class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+					>
+						Favorite Conversions
+					</h3>
+					<div class="space-y-3">
+						<template x-for="item in favorites" :key="item.id">
+							<button
+								@click="restoreFromHistory(item)"
+								class="w-full p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+							>
+								<div class="flex items-center justify-between">
+									<div>
+										<p
+											class="font-medium text-gray-900 dark:text-white"
+										>
+											<span
+												x-text="item.fromValue"
+											></span>
+											<span x-text="item.fromUnit"></span>
+											→
+											<span x-text="item.result"></span>
+											<span x-text="item.toUnit"></span>
+										</p>
+										<p
+											class="text-xs text-gray-500 dark:text-gray-400"
+											x-text="item.category"
+										></p>
+									</div>
+									<button
+										@click.stop="toggleFavorite(item)"
+										class="ml-2"
+									>
+										<svg
+											class="w-5 h-5 text-red-500 fill-current"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+											></path>
+										</svg>
+									</button>
+								</div>
+							</button>
+						</template>
+					</div>
+					<div
+						x-show="favorites.length === 0"
+						class="text-center py-8"
+					>
+						<p class="text-gray-500 dark:text-gray-400">
+							No favorites yet
+						</p>
+					</div>
+				</div>
+			</div>
+		</main>
 
-                // Initialize
-                async init() {
-                    // Load saved preferences
-                    this.loadPreferences();
-                    
-                    // Fetch categories
-                    await this.fetchCategories();
-                    
-                    // Set up keyboard shortcuts
-                    this.setupKeyboardShortcuts();
-                    
-                    // Initialize theme
-                    this.applyTheme();
-                },
+		<!-- Loading Indicator -->
+		<div
+			x-show="loading"
+			class="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50"
+		>
+			<div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+				<div
+					class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"
+				></div>
+				<p class="mt-4 text-gray-600 dark:text-gray-400">
+					Converting...
+				</p>
+			</div>
+		</div>
 
-                // API Methods
-                async fetchCategories() {
-                    try {
-                        const response = await fetch('/categories');
-                        this.categories = await response.json();
-                    } catch (error) {
-                        this.showToast('Failed to load categories', 'error');
-                    }
-                },
+		<!-- Toast Notifications -->
+		<div class="fixed bottom-4 right-4 z-50">
+			<template x-for="toast in toasts" :key="toast.id">
+				<div
+					x-show="toast.visible"
+					x-transition:enter="transition ease-out duration-300"
+					x-transition:enter-start="opacity-0 transform translate-y-2"
+					x-transition:enter-end="opacity-100 transform translate-y-0"
+					x-transition:leave="transition ease-in duration-200"
+					x-transition:leave-start="opacity-100"
+					x-transition:leave-end="opacity-0"
+					class="mb-3 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex items-center space-x-3"
+					:class="toast.type === 'error' ? 'border-l-4 border-red-500' : 'border-l-4 border-green-500'"
+				>
+					<svg
+						x-show="toast.type === 'success'"
+						class="w-5 h-5 text-green-500"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M5 13l4 4L19 7"
+						></path>
+					</svg>
+					<svg
+						x-show="toast.type === 'error'"
+						class="w-5 h-5 text-red-500"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						></path>
+					</svg>
+					<p
+						class="text-gray-700 dark:text-gray-300"
+						x-text="toast.message"
+					></p>
+				</div>
+			</template>
+		</div>
 
-                async fetchUnits(category) {
-                    try {
-                        const response = await fetch(`/units?category=${category}`);
-                        this.units = await response.json();
-                    } catch (error) {
-                        this.showToast('Failed to load units', 'error');
-                    }
-                },
+		<script>
+			function unitConverter() {
+				return {
+					// State
+					categories: [],
+					selectedCategory: null,
+					units: [],
+					fromValue: "",
+					fromUnit: "",
+					toUnit: "",
+					result: null,
+					loading: false,
+					history: [],
+					favorites: [],
+					showHistory: false,
+					showFavorites: false,
+					darkMode: false,
+					toasts: [],
+					quickConversions: [],
+					showVisualization: false,
+					chart: null,
+					showBatchConvert: false,
+					batchResults: [],
 
-                async performConversion() {
-                    if (!this.fromValue || !this.fromUnit || !this.toUnit) return;
+					// Initialize
+					async init() {
+						// Load saved preferences
+						this.loadPreferences();
 
-                    this.loading = true;
-                    try {
-                        const formData = new FormData();
-                        formData.append('value', this.fromValue);
-                        formData.append('from_unit', this.fromUnit);
-                        formData.append('to_unit', this.toUnit);
+						// Fetch categories
+						await this.fetchCategories();
 
-                        const response = await fetch('/convert', {
-                            method: 'POST',
-                            body: formData
-                        });
+						// Set up keyboard shortcuts
+						this.setupKeyboardShortcuts();
 
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Conversion failed');
-                        }
+						// Initialize theme
+						this.applyTheme();
+					},
 
-                        this.result = await response.json();
-                        
-                        // Add to history
-                        this.addToHistory();
-                        
-                        // Get quick conversions
-                        await this.fetchQuickConversions();
-                        
-                        // Update visualization
-                        this.updateVisualization();
-                        
-                    } catch (error) {
-                        this.showToast(error.message, 'error');
-                    } finally {
-                        this.loading = false;
-                    }
-                },
+					// API Methods
+					async fetchCategories() {
+						try {
+							const response = await fetch("/api/v1/categories");
+							const json = await response.json();
+							this.categories = json.data || json;
+						} catch (error) {
+							this.showToast(
+								"Failed to load categories",
+								"error"
+							);
+						}
+					},
 
-                async fetchQuickConversions() {
-                    if (!this.fromValue || !this.fromUnit) return;
+					async fetchUnits(category) {
+						try {
+							const response = await fetch(
+								`/api/v1/units?category=${category}`
+							);
+							const json = await response.json();
+							this.units = json.data || json;
+						} catch (error) {
+							this.showToast("Failed to load units", "error");
+						}
+					},
 
-                    try {
-                        const response = await fetch(`/quick-conversions?value=${this.fromValue}&unit=${this.fromUnit}`);
-                        this.quickConversions = await response.json();
-                        
-                        // Reset batch conversion when units change
-                        this.showBatchConvert = false;
-                        this.batchResults = [];
-                    } catch (error) {
-                        console.error('Failed to fetch quick conversions:', error);
-                    }
-                },
+					async performConversion() {
+						if (!this.fromValue || !this.fromUnit || !this.toUnit)
+							return;
 
-                // UI Methods
-                selectCategory(category) {
-                    this.selectedCategory = category;
-                    this.fetchUnits(category.id);
-                    this.fromUnit = '';
-                    this.toUnit = '';
-                    this.result = null;
-                    this.quickConversions = [];
-                    this.showBatchConvert = false;
-                    this.batchResults = [];
-                },
+						this.loading = true;
+						try {
+							const response = await fetch("/api/v1/convert", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									value: this.fromValue,
+									from_unit: this.fromUnit,
+									to_unit: this.toUnit,
+								}),
+							});
 
-                swapUnits() {
-                    if (!this.fromUnit || !this.toUnit) return;
-                    
-                    [this.fromUnit, this.toUnit] = [this.toUnit, this.fromUnit];
-                    if (this.result) {
-                        this.fromValue = this.result.result;
-                    }
-                    this.performConversion();
-                },
+							if (!response.ok) {
+								const errJson = await response
+									.json()
+									.catch(() => ({}));
+								const msg =
+									(errJson.error &&
+										(errJson.error.message ||
+											errJson.error.code)) ||
+									errJson.error ||
+									"Conversion failed";
+								throw new Error(msg);
+							}
 
-                selectQuickConversion(qc) {
-                    this.toUnit = qc.unit;
-                    this.performConversion();
-                },
+							const json = await response.json();
+							this.result = json.data || json;
 
-                copyResult() {
-                    if (!this.result) return;
-                    
-                    navigator.clipboard.writeText(this.result.formatted).then(() => {
-                        this.showToast('Result copied to clipboard', 'success');
-                    }).catch(() => {
-                        this.showToast('Failed to copy result', 'error');
-                    });
-                },
-                
-                // Batch Conversion
-                async performBatchConversion() {
-                    if (!this.fromValue || !this.fromUnit) return;
-                    
-                    this.loading = true;
-                    try {
-                        // Get all units in the same category
-                        const allUnits = this.units.filter(u => u.id !== this.fromUnit).map(u => u.id);
-                        
-                        const response = await fetch('/batch-convert', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                value: this.fromValue,
-                                from_unit: this.fromUnit,
-                                to_units: allUnits
-                            })
-                        });
-                        
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw new Error(error.error || 'Batch conversion failed');
-                        }
-                        
-                        const data = await response.json();
-                        this.batchResults = data.conversions.map(conv => ({
-                            ...conv,
-                            unit_name: this.units.find(u => u.id === conv.to_unit)?.name || conv.to_unit
-                        }));
-                        
-                    } catch (error) {
-                        this.showToast(error.message, 'error');
-                    } finally {
-                        this.loading = false;
-                    }
-                },
-                
-                copyBatchResult(result) {
-                    const text = `${result.formatted} ${result.unit_name}`;
-                    navigator.clipboard.writeText(text).then(() => {
-                        this.showToast('Copied to clipboard', 'success');
-                    }).catch(() => {
-                        this.showToast('Failed to copy', 'error');
-                    });
-                },
-                
-                downloadBatchResults() {
-                    if (!this.batchResults.length) return;
-                    
-                    const csv = [
-                        ['From', 'To', 'Result'],
-                        ...this.batchResults.filter(r => r.success).map(r => [
-                            `${this.fromValue} ${this.fromUnit}`,
-                            r.unit_name,
-                            r.formatted
-                        ])
-                    ].map(row => row.join(',')).join('\n');
-                    
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `conversion_${this.fromValue}_${this.fromUnit}_${new Date().toISOString()}.csv`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    
-                    this.showToast('Results downloaded', 'success');
-                },
-                
-                // Share functionality
-                async shareConversion() {
-                    if (!this.result) return;
-                    
-                    const shareData = {
-                        title: 'Unit Conversion',
-                        text: `${this.fromValue} ${this.result.from_unit} = ${this.result.formatted} ${this.result.to_unit}`,
-                        url: window.location.href
-                    };
-                    
-                    // Check if Web Share API is available
-                    if (navigator.share) {
-                        try {
-                            await navigator.share(shareData);
-                            this.showToast('Shared successfully', 'success');
-                        } catch (err) {
-                            if (err.name !== 'AbortError') {
-                                this.copyShareText(shareData.text);
-                            }
-                        }
-                    } else {
-                        // Fallback to copying to clipboard
-                        this.copyShareText(shareData.text);
-                    }
-                },
-                
-                copyShareText(text) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        this.showToast('Conversion copied to clipboard', 'success');
-                    }).catch(() => {
-                        this.showToast('Failed to copy', 'error');
-                    });
-                },
+							// Add to history
+							this.addToHistory();
 
-                // History & Favorites
-                addToHistory() {
-                    const item = {
-                        id: Date.now(),
-                        category: this.selectedCategory.name,
-                        fromValue: this.fromValue,
-                        fromUnit: this.fromUnit,
-                        toUnit: this.toUnit,
-                        result: this.result.formatted,
-                        timestamp: new Date().toISOString(),
-                        isFavorite: false
-                    };
-                    
-                    this.history.unshift(item);
-                    if (this.history.length > 50) {
-                        this.history = this.history.slice(0, 50);
-                    }
-                    
-                    this.savePreferences();
-                },
+							// Get quick conversions
+							await this.fetchQuickConversions();
 
-                restoreFromHistory(item) {
-                    // Find and select the category
-                    const category = this.categories.find(c => c.name === item.category);
-                    if (category) {
-                        this.selectCategory(category);
-                        
-                        // Wait for units to load then restore values
-                        setTimeout(() => {
-                            this.fromValue = item.fromValue;
-                            this.fromUnit = item.fromUnit;
-                            this.toUnit = item.toUnit;
-                            this.performConversion();
-                        }, 100);
-                    }
-                    
-                    this.showHistory = false;
-                    this.showFavorites = false;
-                },
+							// Update visualization
+							this.updateVisualization();
+						} catch (error) {
+							this.showToast(error.message, "error");
+						} finally {
+							this.loading = false;
+						}
+					},
 
-                toggleFavorite(item) {
-                    item.isFavorite = !item.isFavorite;
-                    this.savePreferences();
-                },
+					async fetchQuickConversions() {
+						if (!this.fromValue || !this.fromUnit) return;
 
-                get favorites() {
-                    return this.history.filter(item => item.isFavorite);
-                },
+						try {
+							const response = await fetch(
+								`/api/v1/quick-conversions?value=${this.fromValue}&unit=${this.fromUnit}`
+							);
+							const json = await response.json();
+							this.quickConversions = json.data || json;
 
-                clearHistory() {
-                    if (confirm('Are you sure you want to clear all conversion history?')) {
-                        this.history = [];
-                        this.savePreferences();
-                        this.showToast('History cleared', 'success');
-                    }
-                },
+							// Reset batch conversion when units change
+							this.showBatchConvert = false;
+							this.batchResults = [];
+						} catch (error) {
+							console.error(
+								"Failed to fetch quick conversions:",
+								error
+							);
+						}
+					},
 
-                // Theme
-                toggleTheme() {
-                    this.darkMode = !this.darkMode;
-                    this.applyTheme();
-                    this.savePreferences();
-                },
+					// UI Methods
+					selectCategory(category) {
+						this.selectedCategory = category;
+						this.fetchUnits(category.id);
+						this.fromUnit = "";
+						this.toUnit = "";
+						this.result = null;
+						this.quickConversions = [];
+						this.showBatchConvert = false;
+						this.batchResults = [];
+					},
 
-                applyTheme() {
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
-                },
+					swapUnits() {
+						if (!this.fromUnit || !this.toUnit) return;
 
-                // Visualization
-                updateVisualization() {
-                    if (!this.result || this.selectedCategory.id === 'currency') {
-                        this.showVisualization = false;
-                        return;
-                    }
+						[this.fromUnit, this.toUnit] = [
+							this.toUnit,
+							this.fromUnit,
+						];
+						if (this.result) {
+							this.fromValue = this.result.result;
+						}
+						this.performConversion();
+					},
 
-                    this.showVisualization = true;
-                    
-                    // Wait for DOM update
-                    this.$nextTick(() => {
-                        const ctx = document.getElementById('conversionChart');
-                        if (!ctx) return;
+					selectQuickConversion(qc) {
+						this.toUnit = qc.unit;
+						this.performConversion();
+					},
 
-                        // Destroy existing chart
-                        if (this.chart) {
-                            this.chart.destroy();
-                        }
+					copyResult() {
+						if (!this.result) return;
 
-                        // Create new chart
-                        this.chart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: [this.result.from_unit, this.result.to_unit],
-                                datasets: [{
-                                    label: 'Value',
-                                    data: [parseFloat(this.fromValue), parseFloat(this.result.result)],
-                                    backgroundColor: [
-                                        'rgba(59, 130, 246, 0.5)',
-                                        'rgba(16, 185, 129, 0.5)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(59, 130, 246, 1)',
-                                        'rgba(16, 185, 129, 1)'
-                                    ],
-                                    borderWidth: 2
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: {
-                                            color: this.darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                                        },
-                                        ticks: {
-                                            color: this.darkMode ? '#fff' : '#000'
-                                        }
-                                    },
-                                    x: {
-                                        grid: {
-                                            display: false
-                                        },
-                                        ticks: {
-                                            color: this.darkMode ? '#fff' : '#000'
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    });
-                    
-                    // Watch for batch conversion toggle
-                    this.$watch('showBatchConvert', value => {
-                        if (value && this.batchResults.length === 0) {
-                            this.performBatchConversion();
-                        }
-                    });
-                },
+						navigator.clipboard
+							.writeText(this.result.formatted)
+							.then(() => {
+								this.showToast(
+									"Result copied to clipboard",
+									"success"
+								);
+							})
+							.catch(() => {
+								this.showToast(
+									"Failed to copy result",
+									"error"
+								);
+							});
+					},
 
-                // Utilities
-                showToast(message, type = 'success') {
-                    const toast = {
-                        id: Date.now(),
-                        message,
-                        type,
-                        visible: true
-                    };
-                    
-                    this.toasts.push(toast);
-                    
-                    setTimeout(() => {
-                        toast.visible = false;
-                        setTimeout(() => {
-                            this.toasts = this.toasts.filter(t => t.id !== toast.id);
-                        }, 300);
-                    }, 3000);
-                },
+					// Batch Conversion
+					async performBatchConversion() {
+						if (!this.fromValue || !this.fromUnit) return;
 
-                setupKeyboardShortcuts() {
-                    document.addEventListener('keydown', (e) => {
-                        // Ctrl/Cmd + S: Swap units
-                        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                            e.preventDefault();
-                            this.swapUnits();
-                        }
-                        
-                        // Ctrl/Cmd + C: Copy result
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'c' && this.result) {
-                            e.preventDefault();
-                            this.copyResult();
-                        }
-                        
-                        // Ctrl/Cmd + H: Toggle history
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
-                            e.preventDefault();
-                            this.showHistory = !this.showHistory;
-                            this.showFavorites = false;
-                        }
-                        
-                        // Ctrl/Cmd + D: Toggle dark mode
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-                            e.preventDefault();
-                            this.toggleTheme();
-                        }
-                        
-                        // Ctrl/Cmd + B: Batch convert
-                        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-                            e.preventDefault();
-                            if (this.quickConversions.length > 0) {
-                                this.showBatchConvert = true;
-                                this.performBatchConversion();
-                            }
-                        }
-                        
-                        // Ctrl/Cmd + Shift + S: Share
-                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 's') {
-                            e.preventDefault();
-                            this.shareConversion();
-                        }
-                    });
-                },
+						this.loading = true;
+						try {
+							// Get all units in the same category
+							const allUnits = this.units
+								.filter((u) => u.id !== this.fromUnit)
+								.map((u) => u.id);
 
-                // Persistence
-                savePreferences() {
-                    const preferences = {
-                        darkMode: this.darkMode,
-                        history: this.history
-                    };
-                    localStorage.setItem('unitConverterPreferences', JSON.stringify(preferences));
-                },
+							const response = await fetch(
+								"/api/v1/batch-convert",
+								{
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+									},
+									body: JSON.stringify({
+										value: this.fromValue,
+										from_unit: this.fromUnit,
+										to_units: allUnits,
+									}),
+								}
+							);
 
-                loadPreferences() {
-                    const saved = localStorage.getItem('unitConverterPreferences');
-                    if (saved) {
-                        const preferences = JSON.parse(saved);
-                        this.darkMode = preferences.darkMode || false;
-                        this.history = preferences.history || [];
-                    }
-                }
-            };
-        }
-    </script>
-</body>
+							if (!response.ok) {
+								const errJson = await response
+									.json()
+									.catch(() => ({}));
+								const msg =
+									(errJson.error &&
+										(errJson.error.message ||
+											errJson.error.code)) ||
+									errJson.error ||
+									"Batch conversion failed";
+								throw new Error(msg);
+							}
+
+							const json = await response.json();
+							const data = json.data || json;
+							this.batchResults = data.conversions.map(
+								(conv) => ({
+									...conv,
+									unit_name:
+										this.units.find(
+											(u) => u.id === conv.to_unit
+										)?.name || conv.to_unit,
+								})
+							);
+						} catch (error) {
+							this.showToast(error.message, "error");
+						} finally {
+							this.loading = false;
+						}
+					},
+
+					copyBatchResult(result) {
+						const text = `${result.formatted} ${result.unit_name}`;
+						navigator.clipboard
+							.writeText(text)
+							.then(() => {
+								this.showToast(
+									"Copied to clipboard",
+									"success"
+								);
+							})
+							.catch(() => {
+								this.showToast("Failed to copy", "error");
+							});
+					},
+
+					downloadBatchResults() {
+						if (!this.batchResults.length) return;
+
+						const csv = [
+							["From", "To", "Result"],
+							...this.batchResults
+								.filter((r) => r.success)
+								.map((r) => [
+									`${this.fromValue} ${this.fromUnit}`,
+									r.unit_name,
+									r.formatted,
+								]),
+						]
+							.map((row) => row.join(","))
+							.join("\n");
+
+						const blob = new Blob([csv], { type: "text/csv" });
+						const url = URL.createObjectURL(blob);
+						const a = document.createElement("a");
+						a.href = url;
+						a.download = `conversion_${this.fromValue}_${
+							this.fromUnit
+						}_${new Date().toISOString()}.csv`;
+						a.click();
+						URL.revokeObjectURL(url);
+
+						this.showToast("Results downloaded", "success");
+					},
+
+					// Share functionality
+					async shareConversion() {
+						if (!this.result) return;
+
+						const shareData = {
+							title: "Unit Conversion",
+							text: `${this.fromValue} ${this.result.from_unit} = ${this.result.formatted} ${this.result.to_unit}`,
+							url: window.location.href,
+						};
+
+						// Check if Web Share API is available
+						if (navigator.share) {
+							try {
+								await navigator.share(shareData);
+								this.showToast(
+									"Shared successfully",
+									"success"
+								);
+							} catch (err) {
+								if (err.name !== "AbortError") {
+									this.copyShareText(shareData.text);
+								}
+							}
+						} else {
+							// Fallback to copying to clipboard
+							this.copyShareText(shareData.text);
+						}
+					},
+
+					copyShareText(text) {
+						navigator.clipboard
+							.writeText(text)
+							.then(() => {
+								this.showToast(
+									"Conversion copied to clipboard",
+									"success"
+								);
+							})
+							.catch(() => {
+								this.showToast("Failed to copy", "error");
+							});
+					},
+
+					// History & Favorites
+					addToHistory() {
+						const item = {
+							id: Date.now(),
+							category: this.selectedCategory.name,
+							fromValue: this.fromValue,
+							fromUnit: this.fromUnit,
+							toUnit: this.toUnit,
+							result: this.result.formatted,
+							timestamp: new Date().toISOString(),
+							isFavorite: false,
+						};
+
+						this.history.unshift(item);
+						if (this.history.length > 50) {
+							this.history = this.history.slice(0, 50);
+						}
+
+						this.savePreferences();
+					},
+
+					restoreFromHistory(item) {
+						// Find and select the category
+						const category = this.categories.find(
+							(c) => c.name === item.category
+						);
+						if (category) {
+							this.selectCategory(category);
+
+							// Wait for units to load then restore values
+							setTimeout(() => {
+								this.fromValue = item.fromValue;
+								this.fromUnit = item.fromUnit;
+								this.toUnit = item.toUnit;
+								this.performConversion();
+							}, 100);
+						}
+
+						this.showHistory = false;
+						this.showFavorites = false;
+					},
+
+					toggleFavorite(item) {
+						item.isFavorite = !item.isFavorite;
+						this.savePreferences();
+					},
+
+					get favorites() {
+						return this.history.filter((item) => item.isFavorite);
+					},
+
+					clearHistory() {
+						if (
+							confirm(
+								"Are you sure you want to clear all conversion history?"
+							)
+						) {
+							this.history = [];
+							this.savePreferences();
+							this.showToast("History cleared", "success");
+						}
+					},
+
+					// Theme
+					toggleTheme() {
+						this.darkMode = !this.darkMode;
+						this.applyTheme();
+						this.savePreferences();
+					},
+
+					applyTheme() {
+						if (this.darkMode) {
+							document.documentElement.classList.add("dark");
+						} else {
+							document.documentElement.classList.remove("dark");
+						}
+					},
+
+					// Visualization
+					updateVisualization() {
+						if (
+							!this.result ||
+							this.selectedCategory.id === "currency"
+						) {
+							this.showVisualization = false;
+							return;
+						}
+
+						this.showVisualization = true;
+
+						// Wait for DOM update
+						this.$nextTick(() => {
+							const ctx =
+								document.getElementById("conversionChart");
+							if (!ctx) return;
+
+							// Destroy existing chart
+							if (this.chart) {
+								this.chart.destroy();
+							}
+
+							// Create new chart
+							this.chart = new Chart(ctx, {
+								type: "bar",
+								data: {
+									labels: [
+										this.result.from_unit,
+										this.result.to_unit,
+									],
+									datasets: [
+										{
+											label: "Value",
+											data: [
+												parseFloat(this.fromValue),
+												parseFloat(this.result.result),
+											],
+											backgroundColor: [
+												"rgba(59, 130, 246, 0.5)",
+												"rgba(16, 185, 129, 0.5)",
+											],
+											borderColor: [
+												"rgba(59, 130, 246, 1)",
+												"rgba(16, 185, 129, 1)",
+											],
+											borderWidth: 2,
+										},
+									],
+								},
+								options: {
+									responsive: true,
+									maintainAspectRatio: false,
+									plugins: {
+										legend: {
+											display: false,
+										},
+									},
+									scales: {
+										y: {
+											beginAtZero: true,
+											grid: {
+												color: this.darkMode
+													? "rgba(255, 255, 255, 0.1)"
+													: "rgba(0, 0, 0, 0.1)",
+											},
+											ticks: {
+												color: this.darkMode
+													? "#fff"
+													: "#000",
+											},
+										},
+										x: {
+											grid: {
+												display: false,
+											},
+											ticks: {
+												color: this.darkMode
+													? "#fff"
+													: "#000",
+											},
+										},
+									},
+								},
+							});
+						});
+
+						// Watch for batch conversion toggle
+						this.$watch("showBatchConvert", (value) => {
+							if (value && this.batchResults.length === 0) {
+								this.performBatchConversion();
+							}
+						});
+					},
+
+					// Utilities
+					showToast(message, type = "success") {
+						const toast = {
+							id: Date.now(),
+							message,
+							type,
+							visible: true,
+						};
+
+						this.toasts.push(toast);
+
+						setTimeout(() => {
+							toast.visible = false;
+							setTimeout(() => {
+								this.toasts = this.toasts.filter(
+									(t) => t.id !== toast.id
+								);
+							}, 300);
+						}, 3000);
+					},
+
+					setupKeyboardShortcuts() {
+						document.addEventListener("keydown", (e) => {
+							// Ctrl/Cmd + S: Swap units
+							if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+								e.preventDefault();
+								this.swapUnits();
+							}
+
+							// Ctrl/Cmd + C: Copy result
+							if (
+								(e.ctrlKey || e.metaKey) &&
+								e.key === "c" &&
+								this.result
+							) {
+								e.preventDefault();
+								this.copyResult();
+							}
+
+							// Ctrl/Cmd + H: Toggle history
+							if ((e.ctrlKey || e.metaKey) && e.key === "h") {
+								e.preventDefault();
+								this.showHistory = !this.showHistory;
+								this.showFavorites = false;
+							}
+
+							// Ctrl/Cmd + D: Toggle dark mode
+							if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+								e.preventDefault();
+								this.toggleTheme();
+							}
+
+							// Ctrl/Cmd + B: Batch convert
+							if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+								e.preventDefault();
+								if (this.quickConversions.length > 0) {
+									this.showBatchConvert = true;
+									this.performBatchConversion();
+								}
+							}
+
+							// Ctrl/Cmd + Shift + S: Share
+							if (
+								(e.ctrlKey || e.metaKey) &&
+								e.shiftKey &&
+								e.key === "s"
+							) {
+								e.preventDefault();
+								this.shareConversion();
+							}
+						});
+					},
+
+					// Persistence
+					savePreferences() {
+						const preferences = {
+							darkMode: this.darkMode,
+							history: this.history,
+						};
+						localStorage.setItem(
+							"unitConverterPreferences",
+							JSON.stringify(preferences)
+						);
+					},
+
+					loadPreferences() {
+						const saved = localStorage.getItem(
+							"unitConverterPreferences"
+						);
+						if (saved) {
+							const preferences = JSON.parse(saved);
+							this.darkMode = preferences.darkMode || false;
+							this.history = preferences.history || [];
+						}
+					},
+				};
+			}
+		</script>
+	</body>
 </html>
