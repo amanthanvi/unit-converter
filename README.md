@@ -292,3 +292,61 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 ---
 
 Made with ❤️ by developers who believe unit conversion should be more than just numbers.
+## Stabilization v1 (serverless API on Vercel)
+
+This release introduces a versioned API under `/api/v1`, unified JSON response envelopes, basic structured logging, dependency pinning for Python HTTP stack, CI, tests, and a currency-rate fallback for resiliency.
+
+- Runtime/config:
+  - Vercel Python functions pinned in [vercel.json](vercel.json)
+  - New v1 handlers in `api/v1/*` using a common utility [api/_common.py](api/_common.py)
+  - SPA now targets `/api/v1/*` in [index.html](index.html)
+- JSON response envelope (v1):
+  - Success: `{ "ok": true, "data": &lt;payload&gt; }`
+  - Error: `{ "ok": false, "error": { "code": "string", "message": "string", "details": "optional" } }`
+- Endpoints:
+  - GET `/api/v1/health` → `{ ok:true, data:{status:"ok"} }`
+  - GET `/api/v1/categories`
+  - GET `/api/v1/units?category=...`
+  - POST `/api/v1/convert` body JSON `{ value, from_unit, to_unit }`
+  - GET `/api/v1/quick-conversions?value=...&amp;unit=...`
+  - POST `/api/v1/batch-convert` body JSON `{ value, from_unit, to_units:[...] }`
+- CORS:
+  - Controlled via `ALLOW_ORIGIN` env (default `*`). Set to your Vercel preview/prod URLs in those environments.
+- Currency fallback:
+  - Live rates via `forex-python` with in-memory cache per invocation
+  - Fallback file [data/forex_fallback.json](data/forex_fallback.json) used if live fetch fails
+  - Optional `FOREX_FALLBACK_JSON` env to point to a custom JSON file
+- CI and tests:
+  - GitHub Actions at [.github/workflows/ci.yml](.github/workflows/ci.yml): build CSS, run pytest, pip-audit, SBOM
+  - Unit tests: [tests/test_converter.py](tests/test_converter.py), [tests/test_currency_fallback.py](tests/test_currency_fallback.py)
+- Tooling:
+  - Code style and lint via [pyproject.toml](pyproject.toml) and [.pre-commit-config.yaml](.pre-commit-config.yaml)
+  - Dev Container: [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json)
+  - Tailwind purge targets include [index.html](index.html) in [tailwind.config.js](tailwind.config.js)
+
+### Deprecation policy (legacy `/api`)
+- Legacy `/api/*` remains available for at least 90 days from this change.
+- New clients should use `/api/v1/*`. After the window, `/api/*` may be removed or aliased to v1.
+
+### Environment variables
+- `ALLOW_ORIGIN` — CORS allowlist origin (defaults to `*`)
+- `FOREX_FALLBACK_JSON` — path to fallback JSON with USD-based rates (defaults to `data/forex_fallback.json`)
+
+### Local development (no auth; SQLite only if needed later)
+- Build CSS:
+  - `npm ci &amp;&amp; npm run build:css`
+- Run tests:
+  - `pip install -r api/requirements.txt pytest`
+  - `pytest -q`
+- Vercel (recommended): `vercel dev` (requires Vercel CLI)
+- Flask app in [app.py](app.py) is for dev-only; production uses Vercel serverless in `api/` and `api/v1/`.
+
+### Observability and security
+- Structured JSON logs emitted by serverless handlers (request_id, path, status, duration placeholder)
+- Dependency pins in [api/requirements.txt](api/requirements.txt) (requests, urllib3)
+- SBOM generated via CI (Anchore action)
+
+### Notes
+- If deploying to Vercel, set Project Environment Variables:
+  - Preview/Production: `ALLOW_ORIGIN=https://&lt;your-domain&gt;` (replace as needed)
+  - Optional: `FOREX_FALLBACK_JSON` for a custom fallback
