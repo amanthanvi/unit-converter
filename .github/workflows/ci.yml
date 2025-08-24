@@ -1,0 +1,54 @@
+name: ci
+on:
+    push:
+        branches: [main, stabilization/v1]
+    pull_request:
+        branches: [main]
+jobs:
+    node-build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "npm"
+                  cache-dependency-path: package-lock.json
+            - run: npm ci
+            - run: npm run build:css
+
+    python-test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: api/requirements.txt
+            - name: Install deps
+              run: |
+                  python -m pip install --upgrade pip
+                  pip install -r api/requirements.txt
+                  pip install pytest
+            - name: Run tests
+              run: pytest -q
+
+    security:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+                  cache-dependency-path: api/requirements.txt
+            - name: Pip audit
+              run: |
+                  python -m pip install pip-audit
+                  pip-audit -r api/requirements.txt || true
+            - name: SBOM
+              uses: anchore/sbom-action@v0
+              with:
+                  path: .
+                  artifact-name: sbom.spdx.json

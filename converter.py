@@ -1,358 +1,444 @@
 from forex_python.converter import CurrencyRates, RatesNotAvailableError
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional, Any
 import math
 
+
 class UnitConverter:
     def __init__(self):
         self.categories = {
-            'length': {
-                'name': 'Length',
-                'icon': '📏',
-                'units': {
-                    'mm': {'name': 'Millimeter', 'factor': 0.001},
-                    'cm': {'name': 'Centimeter', 'factor': 0.01},
-                    'm': {'name': 'Meter', 'factor': 1},
-                    'km': {'name': 'Kilometer', 'factor': 1000},
-                    'in': {'name': 'Inch', 'factor': 0.0254},
-                    'ft': {'name': 'Foot', 'factor': 0.3048},
-                    'yd': {'name': 'Yard', 'factor': 0.9144},
-                    'mi': {'name': 'Mile', 'factor': 1609.344}
-                }
+            "length": {
+                "name": "Length",
+                "icon": "📏",
+                "units": {
+                    "mm": {"name": "Millimeter", "factor": 0.001},
+                    "cm": {"name": "Centimeter", "factor": 0.01},
+                    "m": {"name": "Meter", "factor": 1},
+                    "km": {"name": "Kilometer", "factor": 1000},
+                    "in": {"name": "Inch", "factor": 0.0254},
+                    "ft": {"name": "Foot", "factor": 0.3048},
+                    "yd": {"name": "Yard", "factor": 0.9144},
+                    "mi": {"name": "Mile", "factor": 1609.344},
+                },
             },
-            'weight': {
-                'name': 'Weight',
-                'icon': '⚖️',
-                'units': {
-                    'mg': {'name': 'Milligram', 'factor': 0.000001},
-                    'g': {'name': 'Gram', 'factor': 0.001},
-                    'kg': {'name': 'Kilogram', 'factor': 1},
-                    'ton': {'name': 'Metric Ton', 'factor': 1000},
-                    'oz': {'name': 'Ounce', 'factor': 0.0283495},
-                    'lb': {'name': 'Pound', 'factor': 0.453592},
-                    'stone': {'name': 'Stone', 'factor': 6.35029}
-                }
+            "weight": {
+                "name": "Weight",
+                "icon": "⚖️",
+                "units": {
+                    "mg": {"name": "Milligram", "factor": 0.000001},
+                    "g": {"name": "Gram", "factor": 0.001},
+                    "kg": {"name": "Kilogram", "factor": 1},
+                    "ton": {"name": "Metric Ton", "factor": 1000},
+                    "oz": {"name": "Ounce", "factor": 0.0283495},
+                    "lb": {"name": "Pound", "factor": 0.453592},
+                    "stone": {"name": "Stone", "factor": 6.35029},
+                },
             },
-            'temperature': {
-                'name': 'Temperature',
-                'icon': '🌡️',
-                'units': {
-                    'celsius': {'name': 'Celsius', 'symbol': '°C'},
-                    'fahrenheit': {'name': 'Fahrenheit', 'symbol': '°F'},
-                    'kelvin': {'name': 'Kelvin', 'symbol': 'K'}
-                }
+            "temperature": {
+                "name": "Temperature",
+                "icon": "🌡️",
+                "units": {
+                    "celsius": {"name": "Celsius", "symbol": "°C"},
+                    "fahrenheit": {"name": "Fahrenheit", "symbol": "°F"},
+                    "kelvin": {"name": "Kelvin", "symbol": "K"},
+                },
             },
-            'volume': {
-                'name': 'Volume',
-                'icon': '🧪',
-                'units': {
-                    'ml': {'name': 'Milliliter', 'factor': 0.001},
-                    'l': {'name': 'Liter', 'factor': 1},
-                    'gal': {'name': 'US Gallon', 'factor': 3.78541},
-                    'qt': {'name': 'US Quart', 'factor': 0.946353},
-                    'pt': {'name': 'US Pint', 'factor': 0.473176},
-                    'cup': {'name': 'US Cup', 'factor': 0.236588},
-                    'fl_oz': {'name': 'US Fluid Ounce', 'factor': 0.0295735},
-                    'tbsp': {'name': 'Tablespoon', 'factor': 0.0147868},
-                    'tsp': {'name': 'Teaspoon', 'factor': 0.00492892}
-                }
+            "volume": {
+                "name": "Volume",
+                "icon": "🧪",
+                "units": {
+                    "ml": {"name": "Milliliter", "factor": 0.001},
+                    "l": {"name": "Liter", "factor": 1},
+                    "gal": {"name": "US Gallon", "factor": 3.78541},
+                    "qt": {"name": "US Quart", "factor": 0.946353},
+                    "pt": {"name": "US Pint", "factor": 0.473176},
+                    "cup": {"name": "US Cup", "factor": 0.236588},
+                    "fl_oz": {"name": "US Fluid Ounce", "factor": 0.0295735},
+                    "tbsp": {"name": "Tablespoon", "factor": 0.0147868},
+                    "tsp": {"name": "Teaspoon", "factor": 0.00492892},
+                },
             },
-            'area': {
-                'name': 'Area',
-                'icon': '📐',
-                'units': {
-                    'mm2': {'name': 'Square Millimeter', 'factor': 0.000001},
-                    'cm2': {'name': 'Square Centimeter', 'factor': 0.0001},
-                    'm2': {'name': 'Square Meter', 'factor': 1},
-                    'km2': {'name': 'Square Kilometer', 'factor': 1000000},
-                    'in2': {'name': 'Square Inch', 'factor': 0.00064516},
-                    'ft2': {'name': 'Square Foot', 'factor': 0.092903},
-                    'yd2': {'name': 'Square Yard', 'factor': 0.836127},
-                    'acre': {'name': 'Acre', 'factor': 4046.86},
-                    'hectare': {'name': 'Hectare', 'factor': 10000}
-                }
+            "area": {
+                "name": "Area",
+                "icon": "📐",
+                "units": {
+                    "mm2": {"name": "Square Millimeter", "factor": 0.000001},
+                    "cm2": {"name": "Square Centimeter", "factor": 0.0001},
+                    "m2": {"name": "Square Meter", "factor": 1},
+                    "km2": {"name": "Square Kilometer", "factor": 1000000},
+                    "in2": {"name": "Square Inch", "factor": 0.00064516},
+                    "ft2": {"name": "Square Foot", "factor": 0.092903},
+                    "yd2": {"name": "Square Yard", "factor": 0.836127},
+                    "acre": {"name": "Acre", "factor": 4046.86},
+                    "hectare": {"name": "Hectare", "factor": 10000},
+                },
             },
-            'speed': {
-                'name': 'Speed',
-                'icon': '🚀',
-                'units': {
-                    'mps': {'name': 'Meters per Second', 'factor': 1},
-                    'kph': {'name': 'Kilometers per Hour', 'factor': 0.277778},
-                    'mph': {'name': 'Miles per Hour', 'factor': 0.44704},
-                    'knot': {'name': 'Knot', 'factor': 0.514444},
-                    'mach': {'name': 'Mach', 'factor': 343}  # at sea level
-                }
+            "speed": {
+                "name": "Speed",
+                "icon": "🚀",
+                "units": {
+                    "mps": {"name": "Meters per Second", "factor": 1},
+                    "kph": {"name": "Kilometers per Hour", "factor": 0.277778},
+                    "mph": {"name": "Miles per Hour", "factor": 0.44704},
+                    "knot": {"name": "Knot", "factor": 0.514444},
+                    "mach": {"name": "Mach", "factor": 343},  # at sea level
+                },
             },
-            'time': {
-                'name': 'Time',
-                'icon': '⏱️',
-                'units': {
-                    'ms': {'name': 'Millisecond', 'factor': 0.001},
-                    's': {'name': 'Second', 'factor': 1},
-                    'min': {'name': 'Minute', 'factor': 60},
-                    'hr': {'name': 'Hour', 'factor': 3600},
-                    'day': {'name': 'Day', 'factor': 86400},
-                    'week': {'name': 'Week', 'factor': 604800},
-                    'month': {'name': 'Month', 'factor': 2629800},  # average
-                    'year': {'name': 'Year', 'factor': 31557600}  # average
-                }
+            "time": {
+                "name": "Time",
+                "icon": "⏱️",
+                "units": {
+                    "ms": {"name": "Millisecond", "factor": 0.001},
+                    "s": {"name": "Second", "factor": 1},
+                    "min": {"name": "Minute", "factor": 60},
+                    "hr": {"name": "Hour", "factor": 3600},
+                    "day": {"name": "Day", "factor": 86400},
+                    "week": {"name": "Week", "factor": 604800},
+                    "month": {"name": "Month", "factor": 2629800},  # average
+                    "year": {"name": "Year", "factor": 31557600},  # average
+                },
             },
-            'digital': {
-                'name': 'Digital Storage',
-                'icon': '💾',
-                'units': {
-                    'bit': {'name': 'Bit', 'factor': 0.125},
-                    'byte': {'name': 'Byte', 'factor': 1},
-                    'kb': {'name': 'Kilobyte', 'factor': 1024},
-                    'mb': {'name': 'Megabyte', 'factor': 1048576},
-                    'gb': {'name': 'Gigabyte', 'factor': 1073741824},
-                    'tb': {'name': 'Terabyte', 'factor': 1099511627776},
-                    'pb': {'name': 'Petabyte', 'factor': 1125899906842624}
-                }
+            "digital": {
+                "name": "Digital Storage",
+                "icon": "💾",
+                "units": {
+                    "bit": {"name": "Bit", "factor": 0.125},
+                    "byte": {"name": "Byte", "factor": 1},
+                    "kb": {"name": "Kilobyte", "factor": 1024},
+                    "mb": {"name": "Megabyte", "factor": 1048576},
+                    "gb": {"name": "Gigabyte", "factor": 1073741824},
+                    "tb": {"name": "Terabyte", "factor": 1099511627776},
+                    "pb": {"name": "Petabyte", "factor": 1125899906842624},
+                },
             },
-            'currency': {
-                'name': 'Currency',
-                'icon': '💱',
-                'units': self._get_currency_units()
-            }
+            "currency": {"name": "Currency", "icon": "💱", "units": self._get_currency_units()},
         }
-        
+
         # Cache for currency rates
         self._currency_cache = {}
         self._cache_timestamp = None
         self._cache_duration = timedelta(hours=1)
-        
+
         # Real-world comparisons database
         self.comparisons = self._load_comparisons()
-        
+
     def _get_currency_units(self) -> Dict[str, Dict[str, str]]:
         """Get currency units with full names"""
         currencies = {
-            'USD': {'name': 'US Dollar', 'symbol': '$'},
-            'EUR': {'name': 'Euro', 'symbol': '€'},
-            'JPY': {'name': 'Japanese Yen', 'symbol': '¥'},
-            'GBP': {'name': 'British Pound', 'symbol': '£'},
-            'AUD': {'name': 'Australian Dollar', 'symbol': 'A$'},
-            'CAD': {'name': 'Canadian Dollar', 'symbol': 'C$'},
-            'CHF': {'name': 'Swiss Franc', 'symbol': 'Fr'},
-            'CNY': {'name': 'Chinese Yuan', 'symbol': '¥'},
-            'SEK': {'name': 'Swedish Krona', 'symbol': 'kr'},
-            'NZD': {'name': 'New Zealand Dollar', 'symbol': 'NZ$'},
-            'MXN': {'name': 'Mexican Peso', 'symbol': '$'},
-            'SGD': {'name': 'Singapore Dollar', 'symbol': 'S$'},
-            'HKD': {'name': 'Hong Kong Dollar', 'symbol': 'HK$'},
-            'NOK': {'name': 'Norwegian Krone', 'symbol': 'kr'},
-            'KRW': {'name': 'South Korean Won', 'symbol': '₩'},
-            'TRY': {'name': 'Turkish Lira', 'symbol': '₺'},
-            'RUB': {'name': 'Russian Ruble', 'symbol': '₽'},
-            'INR': {'name': 'Indian Rupee', 'symbol': '₹'},
-            'BRL': {'name': 'Brazilian Real', 'symbol': 'R$'},
-            'ZAR': {'name': 'South African Rand', 'symbol': 'R'},
-            'DKK': {'name': 'Danish Krone', 'symbol': 'kr'},
-            'PLN': {'name': 'Polish Złoty', 'symbol': 'zł'},
-            'THB': {'name': 'Thai Baht', 'symbol': '฿'},
-            'IDR': {'name': 'Indonesian Rupiah', 'symbol': 'Rp'},
-            'HUF': {'name': 'Hungarian Forint', 'symbol': 'Ft'},
-            'CZK': {'name': 'Czech Koruna', 'symbol': 'Kč'},
-            'ILS': {'name': 'Israeli Shekel', 'symbol': '₪'},
-            'CLP': {'name': 'Chilean Peso', 'symbol': '$'},
-            'PHP': {'name': 'Philippine Peso', 'symbol': '₱'},
-            'AED': {'name': 'UAE Dirham', 'symbol': 'د.إ'},
-            'COP': {'name': 'Colombian Peso', 'symbol': '$'},
-            'SAR': {'name': 'Saudi Riyal', 'symbol': '﷼'},
-            'MYR': {'name': 'Malaysian Ringgit', 'symbol': 'RM'},
-            'RON': {'name': 'Romanian Leu', 'symbol': 'lei'},
-            'BGN': {'name': 'Bulgarian Lev', 'symbol': 'лв'},
-            'HRK': {'name': 'Croatian Kuna', 'symbol': 'kn'}
+            "USD": {"name": "US Dollar", "symbol": "$"},
+            "EUR": {"name": "Euro", "symbol": "€"},
+            "JPY": {"name": "Japanese Yen", "symbol": "¥"},
+            "GBP": {"name": "British Pound", "symbol": "£"},
+            "AUD": {"name": "Australian Dollar", "symbol": "A$"},
+            "CAD": {"name": "Canadian Dollar", "symbol": "C$"},
+            "CHF": {"name": "Swiss Franc", "symbol": "Fr"},
+            "CNY": {"name": "Chinese Yuan", "symbol": "¥"},
+            "SEK": {"name": "Swedish Krona", "symbol": "kr"},
+            "NZD": {"name": "New Zealand Dollar", "symbol": "NZ$"},
+            "MXN": {"name": "Mexican Peso", "symbol": "$"},
+            "SGD": {"name": "Singapore Dollar", "symbol": "S$"},
+            "HKD": {"name": "Hong Kong Dollar", "symbol": "HK$"},
+            "NOK": {"name": "Norwegian Krone", "symbol": "kr"},
+            "KRW": {"name": "South Korean Won", "symbol": "₩"},
+            "TRY": {"name": "Turkish Lira", "symbol": "₺"},
+            "RUB": {"name": "Russian Ruble", "symbol": "₽"},
+            "INR": {"name": "Indian Rupee", "symbol": "₹"},
+            "BRL": {"name": "Brazilian Real", "symbol": "R$"},
+            "ZAR": {"name": "South African Rand", "symbol": "R"},
+            "DKK": {"name": "Danish Krone", "symbol": "kr"},
+            "PLN": {"name": "Polish Złoty", "symbol": "zł"},
+            "THB": {"name": "Thai Baht", "symbol": "฿"},
+            "IDR": {"name": "Indonesian Rupiah", "symbol": "Rp"},
+            "HUF": {"name": "Hungarian Forint", "symbol": "Ft"},
+            "CZK": {"name": "Czech Koruna", "symbol": "Kč"},
+            "ILS": {"name": "Israeli Shekel", "symbol": "₪"},
+            "CLP": {"name": "Chilean Peso", "symbol": "$"},
+            "PHP": {"name": "Philippine Peso", "symbol": "₱"},
+            "AED": {"name": "UAE Dirham", "symbol": "د.إ"},
+            "COP": {"name": "Colombian Peso", "symbol": "$"},
+            "SAR": {"name": "Saudi Riyal", "symbol": "﷼"},
+            "MYR": {"name": "Malaysian Ringgit", "symbol": "RM"},
+            "RON": {"name": "Romanian Leu", "symbol": "lei"},
+            "BGN": {"name": "Bulgarian Lev", "symbol": "лв"},
+            "HRK": {"name": "Croatian Kuna", "symbol": "kn"},
         }
         return currencies
-    
-    def _load_comparisons(self) -> Dict[str, List[Dict[str, Any]]]:
+
+    def _load_comparisons(self) -> Dict[str, Dict[str, List[Dict[str, Any]]]]:
         """Load real-world comparisons for different units"""
         return {
-            'length': {
-                'm': [
-                    {'value': 1, 'description': 'About the height of a kitchen counter'},
-                    {'value': 100, 'description': 'Length of a football field'},
-                    {'value': 828, 'description': 'Height of Burj Khalifa, the tallest building'},
-                    {'value': 8848, 'description': 'Height of Mount Everest'}
+            "length": {
+                "m": [
+                    {"value": 1, "description": "About the height of a kitchen counter"},
+                    {"value": 100, "description": "Length of a football field"},
+                    {"value": 828, "description": "Height of Burj Khalifa, the tallest building"},
+                    {"value": 8848, "description": "Height of Mount Everest"},
                 ],
-                'km': [
-                    {'value': 1, 'description': 'About a 12-minute walk'},
-                    {'value': 42.195, 'description': 'Length of a marathon'},
-                    {'value': 384400, 'description': 'Distance to the Moon'}
+                "km": [
+                    {"value": 1, "description": "About a 12-minute walk"},
+                    {"value": 42.195, "description": "Length of a marathon"},
+                    {"value": 384400, "description": "Distance to the Moon"},
                 ],
-                'ft': [
-                    {'value': 6, 'description': 'Average human height'},
-                    {'value': 1250, 'description': 'Height of Empire State Building'},
-                    {'value': 36000, 'description': 'Cruising altitude of commercial aircraft'}
-                ]
-            },
-            'weight': {
-                'kg': [
-                    {'value': 0.001, 'description': 'Weight of a paperclip'},
-                    {'value': 0.5, 'description': 'Weight of a soccer ball'},
-                    {'value': 70, 'description': 'Average human weight'},
-                    {'value': 6000, 'description': 'Weight of an African elephant'}
+                "ft": [
+                    {"value": 6, "description": "Average human height"},
+                    {"value": 1250, "description": "Height of Empire State Building"},
+                    {"value": 36000, "description": "Cruising altitude of commercial aircraft"},
                 ],
-                'lb': [
-                    {'value': 0.5, 'description': 'Weight of a hamburger'},
-                    {'value': 8, 'description': 'Weight of a newborn baby'},
-                    {'value': 2000, 'description': 'Weight of a small car'}
+            },
+            "weight": {
+                "kg": [
+                    {"value": 0.001, "description": "Weight of a paperclip"},
+                    {"value": 0.5, "description": "Weight of a soccer ball"},
+                    {"value": 70, "description": "Average human weight"},
+                    {"value": 6000, "description": "Weight of an African elephant"},
+                ],
+                "lb": [
+                    {"value": 0.5, "description": "Weight of a hamburger"},
+                    {"value": 8, "description": "Weight of a newborn baby"},
+                    {"value": 2000, "description": "Weight of a small car"},
+                ],
+            },
+            "volume": {
+                "l": [
+                    {"value": 0.25, "description": "A cup of coffee"},
+                    {"value": 2, "description": "Large soda bottle"},
+                    {"value": 50, "description": "Average car fuel tank"},
+                    {"value": 500000, "description": "Olympic swimming pool"},
                 ]
             },
-            'volume': {
-                'l': [
-                    {'value': 0.25, 'description': 'A cup of coffee'},
-                    {'value': 2, 'description': 'Large soda bottle'},
-                    {'value': 50, 'description': 'Average car fuel tank'},
-                    {'value': 500000, 'description': 'Olympic swimming pool'}
+            "area": {
+                "m2": [
+                    {"value": 1, "description": "Small dining table"},
+                    {"value": 50, "description": "Studio apartment"},
+                    {"value": 100, "description": "Tennis court"},
+                    {"value": 10000, "description": "Soccer field"},
                 ]
             },
-            'area': {
-                'm2': [
-                    {'value': 1, 'description': 'Small dining table'},
-                    {'value': 50, 'description': 'Studio apartment'},
-                    {'value': 100, 'description': 'Tennis court'},
-                    {'value': 10000, 'description': 'Soccer field'}
+            "speed": {
+                "kph": [
+                    {"value": 5, "description": "Walking speed"},
+                    {"value": 40, "description": "City driving speed"},
+                    {"value": 300, "description": "High-speed train"},
+                    {"value": 1225, "description": "Speed of sound"},
                 ]
             },
-            'speed': {
-                'kph': [
-                    {'value': 5, 'description': 'Walking speed'},
-                    {'value': 40, 'description': 'City driving speed'},
-                    {'value': 300, 'description': 'High-speed train'},
-                    {'value': 1225, 'description': 'Speed of sound'}
-                ]
-            }
         }
-    
+
     def get_categories(self) -> List[Dict[str, str]]:
         """Get all available conversion categories"""
         return [
-            {
-                'id': cat_id, 
-                'name': cat_data['name'],
-                'icon': cat_data.get('icon', '📊')
-            } 
+            {"id": cat_id, "name": cat_data["name"], "icon": cat_data.get("icon", "📊")}
             for cat_id, cat_data in self.categories.items()
         ]
-    
+
     def get_units(self, category: str) -> List[Dict[str, str]]:
         """Get units for a specific category"""
         if category not in self.categories:
             return []
-        
+
         units = []
-        for unit_id, unit_data in self.categories[category]['units'].items():
-            units.append({
-                'id': unit_id,
-                'name': unit_data['name'],
-                'symbol': unit_data.get('symbol', unit_id)
-            })
+        for unit_id, unit_data in self.categories[category]["units"].items():
+            units.append(
+                {
+                    "id": unit_id,
+                    "name": unit_data["name"],
+                    "symbol": unit_data.get("symbol", unit_id),
+                }
+            )
         return units
-    
+
     def convert(self, value: float, from_unit: str, to_unit: str) -> Dict[str, Any]:
         """Convert between units with additional context"""
         # Find the category
         category = None
         for cat_id, cat_data in self.categories.items():
-            if from_unit in cat_data['units'] and to_unit in cat_data['units']:
+            if from_unit in cat_data["units"] and to_unit in cat_data["units"]:
                 category = cat_id
                 break
-        
+
         if not category:
             raise ValueError(f"Invalid unit conversion: {from_unit} to {to_unit}")
-        
+
         # Perform conversion
-        if category == 'temperature':
+        if category == "temperature":
             result = self._convert_temperature(value, from_unit, to_unit)
-        elif category == 'currency':
+        elif category == "currency":
             result = self._convert_currency(value, from_unit, to_unit)
         else:
             result = self._convert_standard(value, from_unit, to_unit, category)
-        
+
         # Get comparisons
         comparisons = self._get_relevant_comparisons(result, to_unit, category)
-        
+
         # Historical context
         history = self._get_historical_context(from_unit, to_unit)
-        
+
         return {
-            'result': result,
-            'formatted': self._format_result(result, to_unit, category),
-            'comparisons': comparisons,
-            'history': history,
-            'category': category,
-            'from_unit': self.categories[category]['units'][from_unit]['name'],
-            'to_unit': self.categories[category]['units'][to_unit]['name']
+            "result": result,
+            "formatted": self._format_result(result, to_unit, category),
+            "comparisons": comparisons,
+            "history": history,
+            "category": category,
+            "from_unit": self.categories[category]["units"][from_unit]["name"],
+            "to_unit": self.categories[category]["units"][to_unit]["name"],
         }
-    
+
     def _convert_temperature(self, value: float, from_unit: str, to_unit: str) -> float:
         """Convert between temperature units"""
         # Convert to Celsius first
-        if from_unit == 'fahrenheit':
-            celsius = (value - 32) * 5/9
-        elif from_unit == 'kelvin':
+        if from_unit == "fahrenheit":
+            celsius = (value - 32) * 5 / 9
+        elif from_unit == "kelvin":
             celsius = value - 273.15
         else:
             celsius = value
-        
+
         # Convert from Celsius to target
-        if to_unit == 'fahrenheit':
-            return celsius * 9/5 + 32
-        elif to_unit == 'kelvin':
+        if to_unit == "fahrenheit":
+            return celsius * 9 / 5 + 32
+        elif to_unit == "kelvin":
             return celsius + 273.15
         else:
             return celsius
-    
+
     def _convert_currency(self, value: float, from_unit: str, to_unit: str) -> float:
-        """Convert between currencies with caching"""
+        """Convert between currencies with caching and fallback to static rates"""
         if from_unit == to_unit:
             return value
-        
-        # Check cache
+
         now = datetime.now()
-        if (self._cache_timestamp and 
-            now - self._cache_timestamp < self._cache_duration and
-            self._currency_cache):
+        # Use cached rates if fresh
+        if (
+            self._cache_timestamp
+            and now - self._cache_timestamp < self._cache_duration
+            and self._currency_cache
+        ):
             rates = self._currency_cache
         else:
-            # Fetch new rates
-            try:
-                cr = CurrencyRates()
-                rates = {}
-                # Get rates for common base currency (USD)
-                for currency in self.categories['currency']['units']:
-                    if currency != 'USD':
-                        try:
-                            rates[currency] = cr.get_rate('USD', currency)
-                        except:
-                            rates[currency] = None
-                rates['USD'] = 1.0
-                
-                self._currency_cache = rates
-                self._cache_timestamp = now
-            except Exception as e:
-                raise ValueError(f"Currency conversion failed: {str(e)}")
-        
-        # Convert
+            rates = None
+
+            # Environment override to force fallback-only mode (for CI/tests/offline)
+            if (
+                os.environ.get("CURRENCY_FALLBACK_ONLY") == "1"
+                or os.environ.get("DISABLE_LIVE_FOREX") == "1"
+            ):
+                try:
+                    rates = self._load_fallback_rates()
+                    self._currency_cache = rates
+                    self._cache_timestamp = now
+                except Exception as e2:
+                    raise ValueError(f"Currency conversion failed in fallback-only mode: {e2}")
+            else:
+                # Try live rates
+                try:
+                    cr = CurrencyRates()
+                    live_rates = {}
+                    for currency in self.categories["currency"]["units"]:
+                        if currency != "USD":
+                            try:
+                                live_rates[currency] = cr.get_rate("USD", currency)
+                            except Exception:
+                                live_rates[currency] = None
+                    live_rates["USD"] = 1.0
+                    rates = live_rates
+                    self._currency_cache = rates
+                    self._cache_timestamp = now
+                except Exception:
+                    # Live fetch failed — fall back to static file
+                    try:
+                        rates = self._load_fallback_rates()
+                        self._currency_cache = rates
+                        self._cache_timestamp = now
+                    except Exception as e2:
+                        raise ValueError(
+                            f"Currency conversion failed: live rates unavailable and fallback failed: {e2}"
+                        )
+
+        # Convert using rates (USD base)
         if rates.get(from_unit) and rates.get(to_unit):
             usd_value = value / rates[from_unit]
             return usd_value * rates[to_unit]
         else:
             raise ValueError(f"Exchange rate not available for {from_unit} to {to_unit}")
-    
+
+    def _load_fallback_rates(self) -> Dict[str, float]:
+        """
+        Load fallback currency rates from JSON file with basic schema validation.
+
+        Env precedence:
+        - CURRENCY_FALLBACK_PATH (preferred)
+        - FOREX_FALLBACK_JSON (legacy, supported for compatibility)
+        - data/forex_fallback.json (default)
+
+        Expected structure (USD-based recommended):
+        {
+          "base": "USD",
+          "date": "YYYY-MM-DD",
+          "rates": { "EUR": 0.92, "GBP": 0.8, ... }
+        }
+        """
+        path = (
+            os.environ.get("CURRENCY_FALLBACK_PATH")
+            or os.environ.get("FOREX_FALLBACK_JSON")
+            or "data/forex_fallback.json"
+        )
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            raise ValueError("Fallback data must be a JSON object")
+
+        base = data.get("base", "USD")
+        rates = data.get("rates")
+        if not isinstance(rates, dict) or not rates:
+            raise ValueError("Fallback data must include non-empty 'rates' object")
+
+        # Coerce values to float and ensure positive
+        cleaned: Dict[str, Optional[float]] = {}
+        for cur, val in rates.items():
+            if val is None:
+                cleaned[cur] = None
+                continue
+            try:
+                fval = float(val)
+            except Exception:
+                raise ValueError(f"Invalid rate for {cur}: {val}")
+            if fval <= 0:
+                raise ValueError(f"Non-positive rate for {cur}: {val}")
+            cleaned[cur] = fval
+
+        # Normalize to USD base if needed
+        if base != "USD":
+            # Need rate for base->USD to normalize to USD base
+            base_to_usd = cleaned.get("USD")
+            if base_to_usd in (None, 0):
+                raise ValueError("Fallback rates missing USD reference for non-USD base")
+            normalized: Dict[str, Optional[float]] = {}
+            for cur, rate in cleaned.items():
+                if rate is None:
+                    normalized[cur] = None
+                else:
+                    # If rates are base->cur, to convert to USD->cur multiply by base->USD
+                    # USD->cur = (base->cur) * (USD->base). Since base->USD = x, USD->base = 1/x
+                    # But we have base->USD (cleaned['USD']), we want USD->cur:
+                    # USD->cur = (base->cur) / (base->USD)
+                    normalized[cur] = rate / base_to_usd
+            cleaned = normalized
+
+        cleaned["USD"] = 1.0
+        return cleaned  # type: ignore[return-value]
+
     def _convert_standard(self, value: float, from_unit: str, to_unit: str, category: str) -> float:
         """Convert between standard units using factors"""
-        from_factor = self.categories[category]['units'][from_unit]['factor']
-        to_factor = self.categories[category]['units'][to_unit]['factor']
+        from_factor = self.categories[category]["units"][from_unit]["factor"]
+        to_factor = self.categories[category]["units"][to_unit]["factor"]
         return value * from_factor / to_factor
-    
+
     def _format_result(self, value: float, unit: str, category: str) -> str:
         """Format the result with appropriate precision"""
-        if category == 'currency':
+        if category == "currency":
             return f"{value:,.2f}"
         elif value > 1000 or value < 0.01:
             return f"{value:.2e}"
@@ -361,31 +447,35 @@ class UnitConverter:
         elif value > 1:
             return f"{value:,.2f}"
         else:
-            return f"{value:.6f}".rstrip('0').rstrip('.')
-    
-    def _get_relevant_comparisons(self, value: float, unit: str, category: str) -> List[Dict[str, Any]]:
+            return f"{value:.6f}".rstrip("0").rstrip(".")
+
+    def _get_relevant_comparisons(
+        self, value: float, unit: str, category: str
+    ) -> List[Dict[str, Any]]:
         """Get relevant real-world comparisons for the converted value"""
         comparisons = []
-        
+
         if category in self.comparisons and unit in self.comparisons[category]:
             unit_comparisons = self.comparisons[category][unit]
-            
+
             # Find closest comparisons
             for comp in unit_comparisons:
-                ratio = value / comp['value']
+                ratio = value / comp["value"]
                 if 0.1 <= ratio <= 10:  # Within an order of magnitude
-                    comparisons.append({
-                        'description': comp['description'],
-                        'value': comp['value'],
-                        'ratio': ratio,
-                        'formatted': self._format_comparison_ratio(ratio)
-                    })
-            
+                    comparisons.append(
+                        {
+                            "description": comp["description"],
+                            "value": comp["value"],
+                            "ratio": ratio,
+                            "formatted": self._format_comparison_ratio(ratio),
+                        }
+                    )
+
             # Sort by how close the ratio is to 1
-            comparisons.sort(key=lambda x: abs(1 - x['ratio']))
-            
+            comparisons.sort(key=lambda x: abs(1 - x["ratio"]))
+
         return comparisons[:3]  # Return top 3 most relevant
-    
+
     def _format_comparison_ratio(self, ratio: float) -> str:
         """Format comparison ratio in a human-readable way"""
         if ratio < 0.1:
@@ -398,85 +488,99 @@ class UnitConverter:
             return f"{ratio:.1f}×"
         else:
             return f"{int(ratio)}×"
-    
+
     def _get_historical_context(self, from_unit: str, to_unit: str) -> Optional[str]:
         """Get historical context about the units"""
         contexts = {
-            ('ft', 'm'): "The foot was originally based on the human foot length. The meter was defined as 1/10,000,000 of the distance from the equator to the North Pole.",
-            ('mi', 'km'): "The mile comes from the Roman 'mille passus' (1000 paces). The kilometer is part of the metric system, created during the French Revolution.",
-            ('lb', 'kg'): "The pound has ancient Roman origins. The kilogram was originally defined as the mass of 1 liter of water.",
-            ('fahrenheit', 'celsius'): "Fahrenheit set 0°F as the freezing point of brine and 96°F as human body temperature. Celsius based his scale on water's freezing (0°C) and boiling (100°C) points."
+            (
+                "ft",
+                "m",
+            ): "The foot was originally based on the human foot length. The meter was defined as 1/10,000,000 of the distance from the equator to the North Pole.",
+            (
+                "mi",
+                "km",
+            ): "The mile comes from the Roman 'mille passus' (1000 paces). The kilometer is part of the metric system, created during the French Revolution.",
+            (
+                "lb",
+                "kg",
+            ): "The pound has ancient Roman origins. The kilogram was originally defined as the mass of 1 liter of water.",
+            (
+                "fahrenheit",
+                "celsius",
+            ): "Fahrenheit set 0°F as the freezing point of brine and 96°F as human body temperature. Celsius based his scale on water's freezing (0°C) and boiling (100°C) points.",
         }
-        
+
         return contexts.get((from_unit, to_unit)) or contexts.get((to_unit, from_unit))
-    
+
     def get_quick_conversions(self, value: float, unit: str) -> List[Dict[str, Any]]:
         """Get quick conversions to commonly used units in the same category"""
         category = None
         for cat_id, cat_data in self.categories.items():
-            if unit in cat_data['units']:
+            if unit in cat_data["units"]:
                 category = cat_id
                 break
-        
+
         if not category:
             return []
-        
+
         # Define common units for each category
         common_units = {
-            'length': ['m', 'ft', 'km', 'mi'],
-            'weight': ['kg', 'lb', 'g', 'oz'],
-            'temperature': ['celsius', 'fahrenheit', 'kelvin'],
-            'volume': ['l', 'gal', 'ml', 'cup'],
-            'area': ['m2', 'ft2', 'acre', 'hectare'],
-            'speed': ['kph', 'mph', 'mps'],
-            'time': ['s', 'min', 'hr', 'day'],
-            'digital': ['mb', 'gb', 'tb'],
-            'currency': ['USD', 'EUR', 'GBP', 'JPY']
+            "length": ["m", "ft", "km", "mi"],
+            "weight": ["kg", "lb", "g", "oz"],
+            "temperature": ["celsius", "fahrenheit", "kelvin"],
+            "volume": ["l", "gal", "ml", "cup"],
+            "area": ["m2", "ft2", "acre", "hectare"],
+            "speed": ["kph", "mph", "mps"],
+            "time": ["s", "min", "hr", "day"],
+            "digital": ["mb", "gb", "tb"],
+            "currency": ["USD", "EUR", "GBP", "JPY"],
         }
-        
+
         results = []
         for target_unit in common_units.get(category, []):
-            if target_unit != unit and target_unit in self.categories[category]['units']:
+            if target_unit != unit and target_unit in self.categories[category]["units"]:
                 try:
                     conversion = self.convert(value, unit, target_unit)
-                    results.append({
-                        'unit': target_unit,
-                        'name': self.categories[category]['units'][target_unit]['name'],
-                        'value': conversion['result'],
-                        'formatted': conversion['formatted']
-                    })
+                    results.append(
+                        {
+                            "unit": target_unit,
+                            "name": self.categories[category]["units"][target_unit]["name"],
+                            "value": conversion["result"],
+                            "formatted": conversion["formatted"],
+                        }
+                    )
                 except:
                     pass
-        
+
         return results
-    
-    def batch_convert(self, value: float, from_unit: str, to_units: List[str]) -> List[Dict[str, Any]]:
+
+    def batch_convert(
+        self, value: float, from_unit: str, to_units: List[str]
+    ) -> List[Dict[str, Any]]:
         """Convert a value to multiple target units at once"""
         results = []
-        
+
         for to_unit in to_units:
             try:
                 conversion = self.convert(value, from_unit, to_unit)
-                results.append({
-                    'success': True,
-                    'to_unit': to_unit,
-                    'result': conversion['result'],
-                    'formatted': conversion['formatted'],
-                    'comparisons': conversion.get('comparisons', []),
-                    'history': conversion.get('history')
-                })
+                results.append(
+                    {
+                        "success": True,
+                        "to_unit": to_unit,
+                        "result": conversion["result"],
+                        "formatted": conversion["formatted"],
+                        "comparisons": conversion.get("comparisons", []),
+                        "history": conversion.get("history"),
+                    }
+                )
             except Exception as e:
-                results.append({
-                    'success': False,
-                    'to_unit': to_unit,
-                    'error': str(e)
-                })
-        
+                results.append({"success": False, "to_unit": to_unit, "error": str(e)})
+
         return results
-    
+
     def get_all_units_in_category(self, unit: str) -> List[str]:
         """Get all units in the same category as the given unit"""
         for cat_id, cat_data in self.categories.items():
-            if unit in cat_data['units']:
-                return list(cat_data['units'].keys())
+            if unit in cat_data["units"]:
+                return list(cat_data["units"].keys())
         return []
