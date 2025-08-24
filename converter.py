@@ -285,7 +285,7 @@ class UnitConverter:
         # Historical context
         history = self._get_historical_context(from_unit, to_unit)
 
-        return {
+        resp = {
             "result": result,
             "formatted": self._format_result(result, to_unit, category),
             "comparisons": comparisons,
@@ -294,6 +294,12 @@ class UnitConverter:
             "from_unit": self.categories[category]["units"][from_unit]["name"],
             "to_unit": self.categories[category]["units"][to_unit]["name"],
         }
+        # Attach currency rates metadata when applicable
+        if category == "currency":
+            meta = getattr(self, "_currency_meta", None)
+            if isinstance(meta, dict):
+                resp["meta"] = dict(meta)
+        return resp
 
     def _convert_temperature(self, value: float, from_unit: str, to_unit: str) -> float:
         """Convert between temperature units with absolute zero validation"""
@@ -331,6 +337,7 @@ class UnitConverter:
         # Environment toggles for resilience
         force_fallback = os.getenv("CURRENCY_FALLBACK_ONLY", "").strip() == "1"
         disable_live = os.getenv("DISABLE_LIVE_FOREX", "").strip() == "1"
+        source = None
 
         # Use cache if fresh
         if (
@@ -344,6 +351,7 @@ class UnitConverter:
                 rates = self._load_fallback_rates()
                 self._currency_cache = rates
                 self._cache_timestamp = now
+                source = "fallback"
             else:
                 # Try live fetch then fall back to static data on failure
                 try:
@@ -360,11 +368,22 @@ class UnitConverter:
                     rates["USD"] = 1.0
                     self._currency_cache = rates
                     self._cache_timestamp = now
+                    source = "live"
                 except Exception:
                     rates = self._load_fallback_rates()
                     self._currency_cache = rates
                     self._cache_timestamp = now
+                    source = "fallback"
 
+        # Record currency rate source metadata
+        if source is None:
+            prev = getattr(self, "_currency_meta", None)
+            source = prev.get("rates_source") if isinstance(prev, dict) else "live"
+        self._currency_meta = {
+            "rates_source": source,
+            "fallback_forced": force_fallback,
+            "live_disabled": disable_live,
+        }
         # Convert using USD as base
         if rates.get(from_unit) and rates.get(to_unit):
             usd_value = value / rates[from_unit]

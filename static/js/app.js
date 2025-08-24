@@ -552,7 +552,9 @@
 
 			// Internal
 			_updateFallbackIndicator(meta) {
-				const src = meta && meta.currency && meta.currency.source;
+				const src =
+					(meta && meta.currency && meta.currency.source) ||
+					(meta && meta.rates_source);
 				this.currencyFallbackActive = src === "fallback";
 				if (this.currencyFallbackActive) {
 					this.showToast("Using fallback currency rates", "error");

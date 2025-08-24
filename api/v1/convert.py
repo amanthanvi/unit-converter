@@ -1,4 +1,3 @@
-import os
 import json
 from http.server import BaseHTTPRequestHandler
 from converter import UnitConverter
@@ -26,22 +25,7 @@ class handler(BaseHTTPRequestHandler):
         converter = UnitConverter()
         result = converter.convert(value_f, from_unit, to_unit)
 
-        # Meta: indicate currency fallback usage when forced/disabled live
-        meta = {}
-        try:
-            if isinstance(result, dict) and result.get("category") == "currency":
-                forced = os.getenv("CURRENCY_FALLBACK_ONLY", "").strip() == "1"
-                disabled = os.getenv("DISABLE_LIVE_FOREX", "").strip() == "1"
-                meta["currency"] = {
-                    "source": "fallback" if (forced or disabled) else "live"
-                }
-        except Exception:
-            pass
-
-        resp = dict(result)
-        if meta:
-            resp["meta"] = meta
-        return resp
+        return result
 
     def do_OPTIONS(self):
         allow_options(self, methods=["POST", "OPTIONS"])
