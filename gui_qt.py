@@ -10,6 +10,9 @@ class UnitConverterApp(QMainWindow):
 
         self.setWindowTitle("Unit Converter")
         self.setGeometry(100, 100, 300, 200)
+        
+        # Initialize converter
+        self.converter = UnitConverter()
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -20,7 +23,8 @@ class UnitConverterApp(QMainWindow):
         layout = QGridLayout(self.central_widget)
 
         self.category_combobox = QComboBox()
-        self.category_combobox.addItems(UnitConverter.get_categories())
+        categories = self.converter.get_categories()
+        self.category_combobox.addItems([cat['id'] for cat in categories])
         self.category_combobox.currentIndexChanged.connect(self.update_units)
         layout.addWidget(QLabel("Category:"), 0, 0)
         layout.addWidget(self.category_combobox, 0, 1)
@@ -51,7 +55,10 @@ class UnitConverterApp(QMainWindow):
     def update_units(self):
         try:
             category = self.category_combobox.currentText()
-            units = UnitConverter.get_units(category)
+            if not category:
+                return
+            units_data = self.converter.get_units(category)
+            units = [unit['id'] for unit in units_data]
             self.from_unit_combobox.clear()
             self.from_unit_combobox.addItems(units)
             self.to_unit_combobox.clear()
@@ -64,10 +71,12 @@ class UnitConverterApp(QMainWindow):
             value = float(self.value_input.text())
             from_unit = self.from_unit_combobox.currentText()
             to_unit = self.to_unit_combobox.currentText()
-            result = UnitConverter.convert(value, from_unit, to_unit)
-            self.result_value_label.setText(str(result))
+            result = self.converter.convert(value, from_unit, to_unit)
+            self.result_value_label.setText(f"{result['result']:.4f} {result['to_unit']}")
         except ValueError as e:
             self.result_value_label.setText(str(e))
+        except Exception as e:
+            self.result_value_label.setText(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

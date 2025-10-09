@@ -11,7 +11,12 @@
     "build": "npm run build:css",
     "vercel-build": "npm run build:css"
   },
-  "keywords": ["unit-converter", "education", "visualization", "pwa"],
+  "keywords": [
+    "unit-converter",
+    "education",
+    "visualization",
+    "pwa"
+  ],
   "author": "",
   "license": "GPL-3.0",
   "devDependencies": {
