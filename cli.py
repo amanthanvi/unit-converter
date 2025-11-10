@@ -9,8 +9,9 @@ def main():
         from_unit = sys.argv[2]
         to_unit = sys.argv[3]
 
-        result = UnitConverter.convert(value, from_unit, to_unit)
-        print(f"{value} {from_unit} = {result} {to_unit}")
+        converter = UnitConverter()
+        result = converter.convert(value, from_unit, to_unit)
+        print(f"{value} {from_unit} = {result['result']} {to_unit}")
     except IndexError:
         print("Usage: python cli.py <value> <from_unit> <to_unit>")
     except ValueError as e:

@@ -10,6 +10,10 @@ class UnitConverterApp(tk.Tk):
         super().__init__()
         self.title("Unit Converter")
         self.geometry("500x500")
+        
+        # Initialize converter
+        self.converter = UnitConverter()
+        
         self.create_widgets()
 
         # Add theme selector
@@ -40,7 +44,9 @@ class UnitConverterApp(tk.Tk):
 
         ttk.Label(self, text="Category:").grid(column=0, row=1, padx=5, pady=5, sticky="w")
         category_combobox = ttk.Combobox(self, textvariable=self.category_var, state="readonly")
-        category_combobox["values"] = ["length", "weight", "temperature"]  # Add other categories here
+        # Get categories from converter
+        categories = [cat['id'] for cat in self.converter.get_categories()]
+        category_combobox["values"] = categories
         category_combobox.grid(column=1, row=1, padx=5, pady=5, sticky="ew")
 
         ttk.Label(self, text="From:").grid(column=0, row=2, padx=5, pady=5, sticky="w")
@@ -65,7 +71,10 @@ class UnitConverterApp(tk.Tk):
     def update_units(self, *args):
         try:
             category = self.category_var.get()
-            units = UnitConverter.get_units(category)
+            if not category:
+                return
+            units_data = self.converter.get_units(category)
+            units = [unit['id'] for unit in units_data]
             self.from_unit_combobox["values"] = units
             self.to_unit_combobox["values"] = units
         except ValueError:
@@ -76,10 +85,12 @@ class UnitConverterApp(tk.Tk):
             value = self.value_var.get()
             from_unit = self.from_unit_var.get()
             to_unit = self.to_unit_var.get()
-            result = UnitConverter.convert(value, from_unit, to_unit)
-            self.result_var.set(result)
+            result = self.converter.convert(value, from_unit, to_unit)
+            self.result_var.set(f"{result['result']:.4f} {result['to_unit']}")
         except ValueError as e:
             self.result_var.set(str(e))
+        except Exception as e:
+            self.result_var.set(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     app = UnitConverterApp()

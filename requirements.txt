@@ -3,3 +3,7 @@ forex-python==1.6
 werkzeug>=3.0.1
 requests>=2.32.2
 urllib3>=2.2.2
+
+# Optional GUI dependencies (not required for web app)
+# ttkthemes  # For Tkinter GUI (gui.py)
+# PyQt5      # For Qt GUI (gui_qt.py)
